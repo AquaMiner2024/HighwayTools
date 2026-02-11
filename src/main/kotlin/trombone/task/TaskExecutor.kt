@@ -97,11 +97,17 @@ object TaskExecutor {
         val container = player.openContainer
 
         if (mc.currentScreen !is GuiContainer && !containerTask.isLoaded) {
+            if (debugLevel == IO.DebugLevel.VERBOSE) {
+                LambdaMod.LOG.info("${module.chatName} Waiting for GUI to open / Chunk to load...")
+            }
             containerTask.updateState(TaskState.OPEN_CONTAINER)
             return
         }
 
         if (container.inventorySlots.size != 63) {
+            if (debugLevel == IO.DebugLevel.VERBOSE) {
+                LambdaMod.LOG.warn("${module.chatName} Container size mismatch! (Expected 63, got ${container.inventorySlots.size}). WindowID: ${container.windowId}")
+            }
             disableError("Inventory container changed. Current: ${player.openContainer.windowId} and saved ${container.windowId}")
             return
         }
@@ -135,16 +141,18 @@ object TaskExecutor {
         } - 1 - keepFreeSlots
 
         if (containerTask.stopPull || freeSlots < 1) {
+            if (debugLevel == IO.DebugLevel.VERBOSE) {
+                val reason = if (containerTask.stopPull) "stopPull triggered" else "No free slots ($freeSlots)"
+                LambdaMod.LOG.info("${module.chatName} Restock finished: $reason. Breaking container.")
+            }
             containerTask.updateState(TaskState.BREAK)
             containerTask.isOpen = false
             player.closeScreen()
             return
         }
 
-        if (containerTask.stopPull && !containerTask.hasAttribute("preMoveItem")) {
-          // 第一次進入，do nothing
-        } else if (containerTask.hasAttribute("preMoveItem")) {
-          // 檢查上次未完成的操作是否完成
+        if (containerTask.hasAttribute("preMoveItem")) {
+          // 檢查操作是否完成
           val preMoveItem = containerTask.getAttribute("preMoveItem", null) as? Item
           val preMoveSlot = containerTask.getAttribute("preMoveSlot", -1) as Int
 
@@ -158,8 +166,14 @@ object TaskExecutor {
               false // 操作未完成
             }
             if (!operarionCompleted) {
+              if (debugLevel == IO.DebugLevel.VERBOSE) {
+                LambdaMod.LOG.info("${module.chatName} Waiting for server to confirm move: ${preMoveItem.registryName} from slot $preMoveSlot")
+              }
               return // 等待下個tick繼續
             } else {
+              if (debugLevel == IO.DebugLevel.VERBOSE) {
+                LambdaMod.LOG.info("${module.chatName} Move confirmed by server. Continuing...")
+              }
               // 完成操作後清理標記
               containerTask.removeAttribute("preMoveItem")
               containerTask.removeAttribute("preMoveSlot")
@@ -169,6 +183,9 @@ object TaskExecutor {
         }
 
         container.getSlots(0..26).firstItem(containerTask.item)?.let {
+            if (debugLevel == IO.DebugLevel.VERBOSE) {
+                LambdaMod.LOG.info("${module.chatName} Attempting to pull ${it.stack.item.registryName} from slot ${it.slotNumber}")
+            }
             moveToInventory(it, container)
             containerTask.stacksPulled++
             containerTask.stopPull = true
@@ -186,6 +203,9 @@ object TaskExecutor {
             }
         } ?: run {
             if (containerTask.stacksPulled == 0) {
+                if (debugLevel == IO.DebugLevel.VERBOSE) {
+                    LambdaMod.LOG.info("${module.chatName} Found nested Shulker with item. Pulling Shulker...")
+                }
                 Container.getShulkerWith(container.getSlots(0..26), containerTask.item)?.let {
                     moveToInventory(it, container)
                     containerTask.stopPull = true
