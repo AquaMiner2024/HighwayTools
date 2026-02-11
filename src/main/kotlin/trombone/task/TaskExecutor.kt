@@ -97,16 +97,13 @@ object TaskExecutor {
         val container = player.openContainer
 
         if (mc.currentScreen !is GuiContainer && !containerTask.isLoaded) {
-            if (debugLevel == IO.DebugLevel.VERBOSE) {
-                LambdaMod.LOG.info("${module.chatName} Waiting for GUI to open / Chunk to load...")
-            }
             containerTask.updateState(TaskState.OPEN_CONTAINER)
             return
         }
 
         if (container.inventorySlots.size != 63) {
             if (debugLevel == IO.DebugLevel.VERBOSE) {
-                LambdaMod.LOG.warn("${module.chatName} Container size mismatch! (Expected 63, got ${container.inventorySlots.size}). WindowID: ${container.windowId}")
+                MessageSendHelper.sendChatMessage("${module.chatName} &e[Sync] &r窗口大小異常 (${container.inventorySlots.size})，等待同步...")
             }
             disableError("Inventory container changed. Current: ${player.openContainer.windowId} and saved ${container.windowId}")
             return
@@ -143,7 +140,7 @@ object TaskExecutor {
         if (containerTask.stopPull || freeSlots < 1) {
             if (debugLevel == IO.DebugLevel.VERBOSE) {
                 val reason = if (containerTask.stopPull) "stopPull triggered" else "No free slots ($freeSlots)"
-                LambdaMod.LOG.info("${module.chatName} Restock finished: $reason. Breaking container.")
+                MessageSendHelper.sendChatMessage("${module.chatName} Restock finished: $reason. Breaking container.")
             }
             containerTask.updateState(TaskState.BREAK)
             containerTask.isOpen = false
@@ -167,12 +164,12 @@ object TaskExecutor {
             }
             if (!operarionCompleted) {
               if (debugLevel == IO.DebugLevel.VERBOSE) {
-                LambdaMod.LOG.info("${module.chatName} Waiting for server to confirm move: ${preMoveItem.registryName} from slot $preMoveSlot")
+                MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] &r伺服器未確認移出槽位: $preMoveSlot")
               }
               return // 等待下個tick繼續
             } else {
               if (debugLevel == IO.DebugLevel.VERBOSE) {
-                LambdaMod.LOG.info("${module.chatName} Move confirmed by server. Continuing...")
+                MessageSendHelper.sendChatMessage("${module.chatName} &a[Success] &r伺服器已確認物品移出。")
               }
               // 完成操作後清理標記
               containerTask.removeAttribute("preMoveItem")
@@ -184,7 +181,7 @@ object TaskExecutor {
 
         container.getSlots(0..26).firstItem(containerTask.item)?.let {
             if (debugLevel == IO.DebugLevel.VERBOSE) {
-                LambdaMod.LOG.info("${module.chatName} Attempting to pull ${it.stack.item.registryName} from slot ${it.slotNumber}")
+                MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &r正在從槽位 ${slot.slotNumber} 提取物品...")
             }
             moveToInventory(it, container)
             containerTask.stacksPulled++
