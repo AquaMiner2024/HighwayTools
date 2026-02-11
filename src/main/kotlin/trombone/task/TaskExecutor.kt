@@ -172,11 +172,10 @@ object TaskExecutor {
             moveToInventory(it, container)
             containerTask.stacksPulled++
             containerTask.stopPull = true
-            val slotStack = 
-              container.inventorySlots[it.slotNumber].stack 
-              containerTask.setAttribute("preMoveItem", slotStack.item)
-              containerTask.setAttribute("preMoveSlot", it.slotNumber)
-              containerTask.setAttribute("preMoveItemCount", slotStack.count)
+            val slotStack = container.inventorySlots[it.slotNumber].stack 
+            containerTask.setAttribute("preMoveItem", slotStack.item)
+            containerTask.setAttribute("preMoveSlot", it.slotNumber)
+            containerTask.setAttribute("preMoveItemCount", slotStack.count)
 
             if (fastFill) {
                 if (mode == Trombone.Structure.TUNNEL && containerTask.item is ItemPickaxe) {
@@ -190,11 +189,10 @@ object TaskExecutor {
                 Container.getShulkerWith(container.getSlots(0..26), containerTask.item)?.let {
                     moveToInventory(it, container)
                     containerTask.stopPull = true
-                    val slotStack =
-                      container.inventorySlots[it.slotNumber].stack
-                      containerTask.setAttribute("preMoveItem", slotStack.item)
-                      containerTask.setAttribute("preMoveSlot", it.slotNumber)
-                      containerTask.setAttribute("preMoveItemCount", slotStack.count)
+                    val slotStack = container.inventorySlots[it.slotNumber].stack
+                    containerTask.setAttribute("preMoveItem", slotStack.item)
+                    containerTask.setAttribute("preMoveSlot", it.slotNumber)
+                    containerTask.setAttribute("preMoveItemCount", slotStack.count)
                 } ?: run {
                     disableError("No ${containerTask.item.registryName} left in any container.")
                 }
