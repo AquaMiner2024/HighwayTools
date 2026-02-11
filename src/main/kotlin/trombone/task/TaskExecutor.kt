@@ -13,6 +13,7 @@ import HighwayTools.keepFreeSlots
 import HighwayTools.leaveEmptyShulkers
 import HighwayTools.material
 import HighwayTools.mode
+import HighwayTools.pickupDelay
 import com.lambda.client.event.SafeClientEvent
 import com.lambda.client.module.modules.player.InventoryManager
 import com.lambda.client.util.TickTimer
@@ -95,6 +96,13 @@ object TaskExecutor {
 
     private fun SafeClientEvent.doRestock() {
         val container = player.openContainer
+        val currentTick = mc.player.ticksExisted.toLong()
+        if (currentTick - containerTask.lastActionTick < HighwayTools.pickupDelay) {
+            if (debugLevel == IO.DebugLevel.VERBOSE) {
+                MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] &rWait For Pickup Delay")
+            }
+            return
+        }
 
         if (mc.currentScreen !is GuiContainer && !containerTask.isLoaded) {
             containerTask.updateState(TaskState.OPEN_CONTAINER)
@@ -148,68 +156,54 @@ object TaskExecutor {
             return
         }
 
-        if (containerTask.hasAttribute("preMoveItem")) {
-          // 檢查操作是否完成
-          val preMoveItem = containerTask.getAttribute("preMoveItem", null) as? Item
-          val preMoveSlot = containerTask.getAttribute("preMoveSlot", -1) as Int
-
-          if (preMoveItem != null && preMoveSlot >= 0 && preMoveSlot < container.inventorySlots.size) {
-            val currentSlot = container.inventorySlots[preMoveSlot]
-            val operationCompleted = if (currentSlot.stack.isEmpty) { 
-              true // 槽位變空，物品已取出
-            } else if (currentSlot.stack.item != preMoveItem) {
-              true // 槽位物品改變，已移出
+        /*containerTask.pendingItem?.let { item ->
+            val itemStillInSource = container.getSlots(0..26).any { it.stack.item == item }
+            if (itemStillInSource) {
+                if (debugLevel == IO.DebugLevel.VERBOSE) {
+                    MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &rWait for server confirm item move...")
+                }
+                return
             } else {
-              false // 操作未完成
+                containerTask.pendingItem = null
             }
-            if (!operarionCompleted) {
-              if (debugLevel == IO.DebugLevel.VERBOSE) {
-                MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] &r伺服器未確認移出槽位: $preMoveSlot")
-              }
-              return // 等待下個tick繼續
-            } else {
-              if (debugLevel == IO.DebugLevel.VERBOSE) {
-                MessageSendHelper.sendChatMessage("${module.chatName} &a[Success] &r伺服器已確認物品移出。")
-              }
-              // 完成操作後清理標記
-              containerTask.removeAttribute("preMoveItem")
-              containerTask.removeAttribute("preMoveSlot")
-              containerTask.removeAttribute("preMoveItemCount")
-            }
-          }
-        }
+        }*/
 
         container.getSlots(0..26).firstItem(containerTask.item)?.let {
             if (debugLevel == IO.DebugLevel.VERBOSE) {
-                MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &r正在從槽位 ${slot.slotNumber} 提取物品...")
+                MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &r正在提取物品...")
             }
+            containerTask.lastActionTick = currentTick
             moveToInventory(it, container)
+            if (debugLevel == IO.DebugLevel.VERBOSE) {
+                MessageSendHelper.sendChatMessage("${module.chatName} TEST MOVE DONE")
+            }
             containerTask.stacksPulled++
-            containerTask.stopPull = true
-            val slotStack = container.inventorySlots[it.slotNumber].stack 
-            containerTask.setAttribute("preMoveItem", slotStack.item)
-            containerTask.setAttribute("preMoveSlot", it.slotNumber)
-            containerTask.setAttribute("preMoveItemCount", slotStack.count)
 
             if (fastFill) {
+                containerTask.stopPull = true
                 if (mode == Trombone.Structure.TUNNEL && containerTask.item is ItemPickaxe) {
                     containerTask.stopPull = false
                 } else if (mode != Trombone.Structure.TUNNEL && containerTask.item == material.item) {
                     containerTask.stopPull = false
                 }
+            } else if (currentTick - containerTask.lastActionTick >= HighwayTools.pickupDelay) {
+                containerTask.updateState(TaskState.BREAK)
+                containerTask.isOpen = false
+                player.closeScreen()
+                return
             }
         } ?: run {
             if (containerTask.stacksPulled == 0) {
                 if (debugLevel == IO.DebugLevel.VERBOSE) {
-                    LambdaMod.LOG.info("${module.chatName} Found nested Shulker with item. Pulling Shulker...")
+                    MessageSendHelper.sendChatMessage("${module.chatName} Found nested Shulker with item. Pulling Shulker...")
                 }
                 Container.getShulkerWith(container.getSlots(0..26), containerTask.item)?.let {
+                    if (debugLevel == IO.DebugLevel.VERBOSE) {
+                        MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &rPickuping shulkerbox")
+                    }
+                    containerTask.lastActionTick = currentTick
                     moveToInventory(it, container)
                     containerTask.stopPull = true
-                    val slotStack = container.inventorySlots[it.slotNumber].stack
-                    containerTask.setAttribute("preMoveItem", slotStack.item)
-                    containerTask.setAttribute("preMoveSlot", it.slotNumber)
-                    containerTask.setAttribute("preMoveItemCount", slotStack.count)
                 } ?: run {
                     disableError("No ${containerTask.item.registryName} left in any container.")
                 }

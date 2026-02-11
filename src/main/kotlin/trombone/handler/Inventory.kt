@@ -187,7 +187,26 @@ object Inventory {
             false
         }
 
-    fun SafeClientEvent.moveToInventory(originSlot: Slot, container: Container) {
+    fun SafeClientEvent.moveToInventory(originSlot: Slot, container: net.minecraft.inventory.Container) {
+        val canFit = container.getSlots(27..62).any {
+            it.stack.isEmpty || (it.stack.item == originSlot.stack.item && it.stack.count < it.stack.maxStackSize)
+        }
+        if (canFit) {
+            module.addInventoryTask(
+                PlayerInventoryManager.ClickInfo(
+                    container.windowId,
+                    originSlot.slotNumber,
+                    0,
+                    ClickType.QUICK_MOVE
+                )
+            )
+        } else {
+            zipInventory()
+        }
+    }
+
+    // backup
+    /*fun SafeClientEvent.moveToInventory(originSlot: Slot, container: Container) {
         container.getSlots(27..62).firstOrNull {
             originSlot.stack.item == it.stack.item
                 && it.stack.count < originSlot.stack.maxStackSize - originSlot.stack.count
@@ -237,7 +256,7 @@ object Inventory {
                 }
             }
         }
-    }
+    }*/
 
     fun SafeClientEvent.getEjectSlot(): Slot? {
         return player.inventorySlots.firstByStack {

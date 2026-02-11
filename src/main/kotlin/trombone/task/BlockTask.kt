@@ -36,6 +36,8 @@ class BlockTask(
     var sequence: List<PlaceInfo> = emptyList(); private set
     var isLiquidSource = false
 
+    var lastActionTick = 0L
+    var pendingItem: Item? = null
     var isOpen = false
     var stopPull = false
     var stacksPulled = 0
