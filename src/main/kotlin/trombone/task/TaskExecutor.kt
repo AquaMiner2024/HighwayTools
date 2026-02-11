@@ -141,10 +141,43 @@ object TaskExecutor {
             return
         }
 
+        if (containerTask.stopPull && !containerTask.hasAttribute("preMoveItem")) {
+          // 第一次進入，do nothing
+        } else if (containerTask.hasAttribute("preMoveItem")) {
+          // 檢查上次未完成的操作是否完成
+          val preMoveItem = containerTask.getAttribute("preMoveItem", null) as? Item
+          val preMoveSlot = containerTask.getAttribute("preMoveSlot", -1) as Int
+
+          if (preMoveItem != null && preMoveSlot >= 0 && preMoveSlot < container.inventorySlots.size) {
+            val currentSlot = container.inventorySlots[preMoveSlot]
+            val operationCompleted = if (currentSlot.stack.isEmpty) { 
+              true // 槽位變空，物品已取出
+            } else if (currentSlot.stack.item != preMoveItem) {
+              true // 槽位物品改變，已移出
+            } else {
+              false // 操作未完成
+            }
+            if (!operarionCompleted) {
+              return // 等待下個tick繼續
+            } else {
+              // 完成操作後清理標記
+              containerTask.removeAttribute("preMoveItem")
+              containerTask.removeAttribute("preMoveSlot")
+              containerTask.removeAttribute("preMoveItemCount")
+            }
+          }
+        }
+
         container.getSlots(0..26).firstItem(containerTask.item)?.let {
             moveToInventory(it, container)
             containerTask.stacksPulled++
             containerTask.stopPull = true
+            val slotStack = 
+              container.inventorySlots[it.slotNumber].stack 
+              containerTask.setAttribute("preMoveItem", slotStack.item)
+              containerTask.setAttribute("preMoveSlot", it.slotNumber)
+              containerTask.setAttribute("preMoveItemCount", slotStack.count)
+
             if (fastFill) {
                 if (mode == Trombone.Structure.TUNNEL && containerTask.item is ItemPickaxe) {
                     containerTask.stopPull = false
@@ -157,6 +190,11 @@ object TaskExecutor {
                 Container.getShulkerWith(container.getSlots(0..26), containerTask.item)?.let {
                     moveToInventory(it, container)
                     containerTask.stopPull = true
+                    val slotStack =
+                      container.inventorySlots[it.slotNumber].stack
+                      containerTask.setAttribute("preMoveItem", slotStack.item)
+                      containerTask.setAttribute("preMoveSlot", it.slotNumber)
+                      containerTask.setAttribute("preMoveItemCount", slotStack.count)
                 } ?: run {
                     disableError("No ${containerTask.item.registryName} left in any container.")
                 }
