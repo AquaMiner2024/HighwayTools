@@ -177,17 +177,28 @@ object Container {
 
     private fun getShulkerData(stack: ItemStack, item: Item): Int {
         val tagCompound = if (stack.item is ItemShulkerBox) stack.tagCompound else return 0
+        var count = 0
 
         if (tagCompound != null && tagCompound.hasKey("BlockEntityTag", 10)) {
             val blockEntityTag = tagCompound.getCompoundTag("BlockEntityTag")
             if (blockEntityTag.hasKey("Items", 9)) {
                 val shulkerInventory = NonNullList.withSize(27, ItemStack.EMPTY)
                 ItemStackHelper.loadAllItems(blockEntityTag, shulkerInventory)
-                return shulkerInventory.count { it.item == item }
+                count = shulkerInventory.count { it.item == item }
             }
         }
 
-        return 0
+        // 將物品與特定顏色的界伏盒綁定用於適應高版本無法預覽某些物品
+        if (count == 0) {
+            val block = stack.item.block
+            count = when {
+                block == Blocks.GRAY_SHULKER_BOX && (item == Items.DIAMOND_PICKAXE || item.registryName.toString().contains("pickaxe")) -> 1
+                block == Blocks.YELLOW_SHULKER_BOX && (item == Items.GOLDEN_APPLE || item == Items.EXPERIENCE_BOTTLE) -> 1
+                else -> 0
+            }
+        }
+
+        return count
     }
 
     fun SafeClientEvent.getCollectingPosition(): BlockPos? {
