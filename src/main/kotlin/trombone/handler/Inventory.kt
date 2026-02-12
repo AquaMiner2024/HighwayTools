@@ -187,76 +187,31 @@ object Inventory {
             false
         }
 
-    fun SafeClientEvent.moveToInventory(originSlot: Slot, container: net.minecraft.inventory.Container) {
-        val canFit = container.getSlots(27..62).any {
-            it.stack.isEmpty || (it.stack.item == originSlot.stack.item && it.stack.count < it.stack.maxStackSize)
-        }
-        if (canFit) {
-            module.addInventoryTask(
-                PlayerInventoryManager.ClickInfo(
-                    container.windowId,
-                    originSlot.slotNumber,
-                    0,
-                    ClickType.QUICK_MOVE
-                )
-            )
-        } else {
-            zipInventory()
-        }
-    }
-
-    // backup
-    /*fun SafeClientEvent.moveToInventory(originSlot: Slot, container: Container) {
+    fun SafeClientEvent.moveToInventory(originSlot: Slot, container: Container) {
         container.getSlots(27..62).firstOrNull {
             originSlot.stack.item == it.stack.item
                 && it.stack.count < originSlot.stack.maxStackSize - originSlot.stack.count
         }?.let { _ ->
-            module.addInventoryTask(
-                PlayerInventoryManager.ClickInfo(
-                    container.windowId,
-                    originSlot.slotNumber,
-                    0,
-                    ClickType.QUICK_MOVE
-                )
-            )
+            clickSlot(module, container.windowId, originSlot.slotNumber, 0, ClickType.QUICK_MOVE)
         } ?: run {
             container.getSlots(54..62).firstOrNull {
                 InventoryManager.ejectList.contains(it.stack.item.registryName.toString())
                     || it.stack.isEmpty
             }?.let { freeHotbarSlot ->
-                module.addInventoryTask(
-                    PlayerInventoryManager.ClickInfo(
-                        container.windowId,
-                        originSlot.slotNumber,
-                        freeHotbarSlot.slotNumber - 54,
-                        ClickType.SWAP
-                    )
-                )
+                clickSlot(module, container.windowId, originSlot.slotNumber, freeHotbarSlot.slotNumber - 54, ClickType.SWAP)
             } ?: run {
                 container.getSlots(27..53).firstOrNull {
                     InventoryManager.ejectList.contains(it.stack.item.registryName.toString())
                         || it.stack.isEmpty
                 }?.let { freeSlot ->
-                    module.addInventoryTask(
-                        PlayerInventoryManager.ClickInfo(
-                            container.windowId,
-                            0,
-                            freeSlot.slotNumber,
-                            ClickType.SWAP
-                        ),
-                        PlayerInventoryManager.ClickInfo(
-                            container.windowId,
-                            freeSlot.slotNumber,
-                            0,
-                            ClickType.SWAP
-                        )
-                    )
+                        clickSlot(module, container.windowId, 0, freeSlot.slotNumber, ClickType.SWAP)
+                        clickSlot(module, container.windowId, freeSlot.slotNumber, 0, ClickType.SWAP)
                 } ?: run {
                     zipInventory()
                 }
             }
         }
-    }*/
+    }
 
     fun SafeClientEvent.getEjectSlot(): Slot? {
         return player.inventorySlots.firstByStack {

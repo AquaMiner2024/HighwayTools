@@ -156,41 +156,21 @@ object TaskExecutor {
             return
         }
 
-        /*containerTask.pendingItem?.let { item ->
-            val itemStillInSource = container.getSlots(0..26).any { it.stack.item == item }
-            if (itemStillInSource) {
-                if (debugLevel == IO.DebugLevel.VERBOSE) {
-                    MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &rWait for server confirm item move...")
-                }
-                return
-            } else {
-                containerTask.pendingItem = null
-            }
-        }*/
-
         container.getSlots(0..26).firstItem(containerTask.item)?.let {
             if (debugLevel == IO.DebugLevel.VERBOSE) {
                 MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &r正在提取物品...")
             }
             containerTask.lastActionTick = currentTick
             moveToInventory(it, container)
-            if (debugLevel == IO.DebugLevel.VERBOSE) {
-                MessageSendHelper.sendChatMessage("${module.chatName} TEST MOVE DONE")
-            }
             containerTask.stacksPulled++
+            containerTask.stopPull = true
 
             if (fastFill) {
-                containerTask.stopPull = true
                 if (mode == Trombone.Structure.TUNNEL && containerTask.item is ItemPickaxe) {
                     containerTask.stopPull = false
                 } else if (mode != Trombone.Structure.TUNNEL && containerTask.item == material.item) {
                     containerTask.stopPull = false
                 }
-            } else if (currentTick - containerTask.lastActionTick >= HighwayTools.pickupDelay) {
-                containerTask.updateState(TaskState.BREAK)
-                containerTask.isOpen = false
-                player.closeScreen()
-                return
             }
         } ?: run {
             if (containerTask.stacksPulled == 0) {
