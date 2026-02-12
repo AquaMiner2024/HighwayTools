@@ -189,6 +189,7 @@ object Container {
         }
 
         // 將物品與特定顏色的界伏盒綁定用於適應高版本無法預覽某些物品
+        // WARNING: 請將Leave empty shulkers開啟，否則當用完一盒後，當他開啟到一個空盒就會停止工作
         if (count == 0) {
             val block = stack.item.block
             count = when {

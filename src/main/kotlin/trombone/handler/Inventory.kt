@@ -192,6 +192,8 @@ object Inventory {
             originSlot.stack.item == it.stack.item
                 && it.stack.count < originSlot.stack.maxStackSize - originSlot.stack.count
         }?.let { _ ->
+            // Change Info: 移除隊列系統與棄用ClickInfo，用clickSlot拿取物品，
+            // 原先的方式會等待伺服器傳送某種確認，但高版本伺服器並不會傳送，這導致了補貨問題
             clickSlot(module, container.windowId, originSlot.slotNumber, 0, ClickType.QUICK_MOVE)
         } ?: run {
             container.getSlots(54..62).firstOrNull {
