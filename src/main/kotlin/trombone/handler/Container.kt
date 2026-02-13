@@ -10,6 +10,7 @@ import HighwayTools.saveEnder
 import HighwayTools.saveFood
 import HighwayTools.saveMaterial
 import HighwayTools.saveTools
+import HighwayTools.saveXP
 import HighwayTools.searchEChest
 import com.lambda.client.commons.extension.ceilToInt
 import com.lambda.client.event.SafeClientEvent
@@ -194,7 +195,7 @@ object Container {
             val block = stack.item.block
             count = when {
                 block == Blocks.GRAY_SHULKER_BOX && (item == Items.DIAMOND_PICKAXE || item.registryName.toString().contains("pickaxe")) -> 1
-                block == Blocks.YELLOW_SHULKER_BOX && (item == Items.GOLDEN_APPLE || item == Items.EXPERIENCE_BOTTLE) -> 1
+                block == Blocks.YELLOW_SHULKER_BOX && (item == Items.GOLDEN_APPLE) -> 1
                 else -> 0
             }
         }
@@ -232,6 +233,7 @@ object Container {
         if (saveEnder > 0 && item.block == Blocks.ENDER_CHEST) message += insufficientMaterialPrint(itemCount, saveEnder, Blocks.ENDER_CHEST.localizedName)
         if (saveTools > 0 && item == Items.DIAMOND_PICKAXE) message += insufficientMaterialPrint(itemCount, saveTools, "Diamond Pickaxe(s)")
         if (saveFood > 0 && item == Items.GOLDEN_APPLE) message += insufficientMaterialPrint(itemCount, saveFood, "Golden Apple(s)")
+        if (saveXP > 0 && item == Items.EXPERIENCE_BOTTLE) message += insufficientMaterialPrint(itemCount, saveXP, "Experience Bottle(s)")
         return "$message\nTo continue anyways, set setting in ${TextFormatting.GRAY}Storage Management > Save <Material>${TextFormatting.RESET} to zero."
     }
 

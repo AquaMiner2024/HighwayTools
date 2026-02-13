@@ -6,10 +6,12 @@ import HighwayTools.dynamicDelay
 import HighwayTools.food
 import HighwayTools.ignoreBlocks
 import HighwayTools.manageFood
+import HighwayTools.manageXP
 import HighwayTools.material
 import HighwayTools.maxReach
 import HighwayTools.multiBuilding
 import HighwayTools.saveFood
+import HighwayTools.saveXP
 import HighwayTools.saveTools
 import HighwayTools.storageManagement
 import HighwayTools.width
@@ -29,6 +31,7 @@ import net.minecraft.block.BlockLiquid
 import net.minecraft.block.state.IBlockState
 import net.minecraft.init.Blocks
 import net.minecraft.init.Items
+import net.minecraft.item.ItemExpBottle
 import net.minecraft.item.ItemFood
 import net.minecraft.item.ItemPickaxe
 import net.minecraft.util.math.AxisAlignedBB
@@ -194,6 +197,13 @@ object TaskManager {
                 && player.inventorySlots.countItem<ItemFood>() <= saveFood -> {
                 // TODO: ItemFood support
                 handleRestock(food)
+            }
+
+            /* Check XP */
+            storageManagement
+                    && manageXP
+                    && player.inventorySlots.countItem<ItemExpBottle>() <= saveXP -> {
+                handleRestock(Items.EXPERIENCE_BOTTLE)
             }
 
             /* Restock obsidian if needed */
