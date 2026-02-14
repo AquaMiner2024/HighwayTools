@@ -1,10 +1,9 @@
 package trombone
 
-import HighwayTools.debugLevel
 import HighwayTools.moveSpeed
 import HighwayTools.scaffold
 import HighwayTools.rangeMultiplier
-import HighwayTools.width
+import HighwayTools.waitTicks
 import com.lambda.client.event.SafeClientEvent
 import com.lambda.client.util.BaritoneUtils
 import com.lambda.client.util.EntityUtils.flooredPosition
@@ -14,7 +13,6 @@ import com.lambda.client.util.math.Direction
 import com.lambda.client.util.math.VectorUtils.distanceTo
 import com.lambda.client.util.math.VectorUtils.multiply
 import com.lambda.client.util.math.VectorUtils.toVec3dCenter
-import com.lambda.client.util.text.MessageSendHelper
 import com.lambda.client.util.world.isReplaceable
 import net.minecraft.block.BlockLiquid
 import net.minecraft.init.Blocks
@@ -23,7 +21,6 @@ import net.minecraft.util.math.Vec3d
 import trombone.IO.disableError
 import trombone.Statistics.simpleMovingAverageDistance
 import trombone.Trombone.active
-import trombone.Trombone.module
 import trombone.handler.Container.containerTask
 import trombone.handler.Container.getCollectingPosition
 import trombone.handler.Inventory.lastHitVec
@@ -142,15 +139,9 @@ object Pathfinder {
                 if (diagonalWaitTicks > 0) {
                     diagonalWaitTicks--
                     stopMoveTo()
-                    if (debugLevel == IO.DebugLevel.VERBOSE) {
-                        MessageSendHelper.sendChatMessage("${module.chatName} &6[Waiting] &rWaiting for diagonalWaitTicks:${diagonalWaitTicks}")
-                    }
                     return
                 }
                 if (diagonalTarget1 == null) {
-                    if (debugLevel == IO.DebugLevel.VERBOSE) {
-                        MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &rInto DIAGONAL_STUCK state")
-                    }
                     diagonalTarget1 = Vec3d(player.posX + (-dx - dz) * rangeMultiplier, player.posY, player.posZ + (-dz + dx) * rangeMultiplier)
                     diagonalTarget2 = Vec3d(player.posX + (-dx + dz) * rangeMultiplier, player.posY, player.posZ + (-dz - dx) * rangeMultiplier)
                 }
@@ -159,29 +150,20 @@ object Pathfinder {
                 when (diagonalStep) {
                     0 -> {
                         moveTo(t1)
-                        if (debugLevel == IO.DebugLevel.VERBOSE) {
-                            MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &rMove to ${t1}")
-                        }
                         if (player.positionVector.distanceTo(t1) < 0.3) {
                             stopMoveTo()
                             diagonalStep = 1
-                            diagonalWaitTicks = 20
+                            diagonalWaitTicks = waitTicks
                         }
                     }
                     1 -> {
                         moveTo(t2)
-                        if (debugLevel == IO.DebugLevel.VERBOSE) {
-                            MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &rMove to ${t2}")
-                        }
                         if (player.positionVector.distanceTo(t2) < 0.3) {
                             stopMoveTo()
-                            if (debugLevel == IO.DebugLevel.VERBOSE) {
-                                MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &rDIAGONAL_STUCK Move Done")
-                            }
                             diagonalTarget1 = null
                             diagonalTarget2 = null
                             diagonalStep = 0
-                            diagonalWaitTicks = 20
+                            diagonalWaitTicks = waitTicks
                             moveState = MovementState.RUNNING
                         }
                     }
@@ -229,19 +211,6 @@ object Pathfinder {
         player.motionX = 0.0
         player.motionZ = 0.0
     }
-
-    /*fun SafeClientEvent.isDiagonalCenter(): Boolean {
-        val dir = startingDirection.directionVec
-        val sideX = -dir.z
-        val sideZ = dir.x
-        for (i in -width / 2..width / 2) {
-            val checkPos = player.flooredPosition.add(sideX * i, 0, sideZ * i)
-            if (world.isAirBlock(checkPos)) {
-                return false
-            }
-        }
-        return true
-    }*/
 
     fun updateProcess() {
         if (!active) {

@@ -14,6 +14,7 @@ import HighwayTools.leaveEmptyShulkers
 import HighwayTools.material
 import HighwayTools.mode
 import HighwayTools.pickupDelay
+import HighwayTools.restartInterval
 import com.lambda.client.event.SafeClientEvent
 import com.lambda.client.module.modules.player.InventoryManager
 import com.lambda.client.util.TickTimer
@@ -104,7 +105,7 @@ object TaskExecutor {
     private fun SafeClientEvent.doRestock() {
         val container = player.openContainer
         val currentTick = mc.player.ticksExisted.toLong()
-        if (currentTick - containerTask.lastActionTick < HighwayTools.pickupDelay) {
+        if (currentTick - containerTask.lastActionTick < pickupDelay) {
             if (debugLevel == IO.DebugLevel.VERBOSE) {
                 MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] &rWait For Pickup Delay")
             }
@@ -502,7 +503,7 @@ object TaskExecutor {
             && moveState != Pathfinder.MovementState.BRIDGE
             && moveState != Pathfinder.MovementState.DIAGONAL_STUCK
             && startingDirection.isDiagonal
-            && (world.totalWorldTime - lastDiagonalStuckTick) > 100L
+            && (world.totalWorldTime - lastDiagonalStuckTick) > restartInterval
         ) {
             moveState = Pathfinder.MovementState.DIAGONAL_STUCK
             lastDiagonalStuckTick = world.totalWorldTime

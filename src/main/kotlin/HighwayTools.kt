@@ -94,6 +94,8 @@ object HighwayTools : PluginModule(
     val scaffold by setting("Scaffold", true, { page == Page.PLACING }, description = "Tries to bridge / scaffold when stuck placing")
     val placementSearch by setting("Place Deep Search", 2, 1..4, 1, { page == Page.PLACING }, description = "EXPERIMENTAL: Attempts to find a support block for placing against", unit = " blocks")
     val rangeMultiplier by setting("Range Multiplier", 0.3f, 0.3f..1.0f, 0.1f, { page == Page.PLACING }, description = "Range of move distances when stuck at diagonal highway")
+    val waitTicks by setting("Wait Ticks", 1, 0..20, 1, { page == Page.PLACING }, description = "How much ticks to wait when DiagonalStuck move to a place")
+    val restartInterval by setting("Restart Interval", 3, 0..100, 1, { page == Page.PLACING }, description = "How much ticks interval of DIAGONAL_STUCK state can be re-trigger")
 
     // storage management
     val storageManagement by setting("Manage Storage", true, { page == Page.STORAGE_MANAGEMENT }, description = "Choose to interact with container using only packets")
