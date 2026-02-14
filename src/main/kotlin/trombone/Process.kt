@@ -2,10 +2,12 @@ package trombone
 
 import HighwayTools
 import HighwayTools.anonymizeStats
+import baritone.api.pathing.goals.GoalBlock
 import baritone.api.pathing.goals.GoalNear
 import baritone.api.process.IBaritoneProcess
 import baritone.api.process.PathingCommand
 import baritone.api.process.PathingCommandType
+import com.lambda.client.util.BaritoneUtils
 import com.lambda.client.util.math.CoordinateConverter.asString
 import trombone.Pathfinder.goal
 import trombone.task.TaskManager.lastTask

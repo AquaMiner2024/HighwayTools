@@ -93,6 +93,7 @@ object HighwayTools : PluginModule(
     val illegalPlacements by setting("Illegal Placements", false, { page == Page.PLACING }, description = "Do not use on 2b2t. Tries to interact with invisible surfaces")
     val scaffold by setting("Scaffold", true, { page == Page.PLACING }, description = "Tries to bridge / scaffold when stuck placing")
     val placementSearch by setting("Place Deep Search", 2, 1..4, 1, { page == Page.PLACING }, description = "EXPERIMENTAL: Attempts to find a support block for placing against", unit = " blocks")
+    val rangeMultiplier by setting("Range Multiplier", 0.3f, 0.3f..1.0f, 0.1f, { page == Page.PLACING }, description = "Range of move distances when stuck at diagonal highway")
 
     // storage management
     val storageManagement by setting("Manage Storage", true, { page == Page.STORAGE_MANAGEMENT }, description = "Choose to interact with container using only packets")

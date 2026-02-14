@@ -27,7 +27,7 @@ class BlockTask(
     var isFiller: Boolean = false,
     var item: Item = Items.AIR
 ) {
-    private var ranTicks = 0
+    var ranTicks = 0
     var stuckTicks = 0; private set
     var shuffle = 0; private set
     var startDistance = 0.0; private set

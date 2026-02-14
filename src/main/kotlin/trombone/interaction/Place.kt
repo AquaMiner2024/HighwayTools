@@ -75,7 +75,7 @@ object Place {
         }
 
         defaultScope.launch {
-            delay(20L) // ToDo: Check if necessary
+            //delay(20L) // ToDo: Check if necessary
             onMainThreadSafe {
                 val placePacket = CPacketPlayerTryUseItemOnBlock(placePos, side, EnumHand.MAIN_HAND, hitVecOffset.x.toFloat(), hitVecOffset.y.toFloat(), hitVecOffset.z.toFloat())
                 connection.sendPacket(placePacket)

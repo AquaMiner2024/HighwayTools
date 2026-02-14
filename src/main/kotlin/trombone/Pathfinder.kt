@@ -1,7 +1,10 @@
 package trombone
 
+import HighwayTools.debugLevel
 import HighwayTools.moveSpeed
 import HighwayTools.scaffold
+import HighwayTools.rangeMultiplier
+import HighwayTools.width
 import com.lambda.client.event.SafeClientEvent
 import com.lambda.client.util.BaritoneUtils
 import com.lambda.client.util.EntityUtils.flooredPosition
@@ -11,6 +14,7 @@ import com.lambda.client.util.math.Direction
 import com.lambda.client.util.math.VectorUtils.distanceTo
 import com.lambda.client.util.math.VectorUtils.multiply
 import com.lambda.client.util.math.VectorUtils.toVec3dCenter
+import com.lambda.client.util.text.MessageSendHelper
 import com.lambda.client.util.world.isReplaceable
 import net.minecraft.block.BlockLiquid
 import net.minecraft.init.Blocks
@@ -19,6 +23,7 @@ import net.minecraft.util.math.Vec3d
 import trombone.IO.disableError
 import trombone.Statistics.simpleMovingAverageDistance
 import trombone.Trombone.active
+import trombone.Trombone.module
 import trombone.handler.Container.containerTask
 import trombone.handler.Container.getCollectingPosition
 import trombone.handler.Inventory.lastHitVec
@@ -39,8 +44,13 @@ object Pathfinder {
     private var targetBlockPos = BlockPos(0, -1, 0)
     var distancePending = 0
 
+    private var diagonalTarget1: Vec3d? = null
+    private var diagonalTarget2: Vec3d? = null
+    private var diagonalStep = 0
+    private var diagonalWaitTicks = 0
+
     enum class MovementState {
-        RUNNING, PICKUP, BRIDGE, RESTOCK
+        RUNNING, PICKUP, BRIDGE, RESTOCK, DIAGONAL_STUCK
     }
 
     fun SafeClientEvent.setupPathing() {
@@ -54,6 +64,8 @@ object Pathfinder {
         when (moveState) {
             MovementState.RUNNING -> {
                 goal = currentBlockPos
+                diagonalTarget1 = null
+                diagonalTarget2 = null
 
                 // ToDo: Rewrite
                 if (currentBlockPos.distanceTo(targetBlockPos) < 2 ||
@@ -90,8 +102,20 @@ object Pathfinder {
                 val isAboveAir = world.getBlockState(player.flooredPosition.down()).isReplaceable
                 if (isAboveAir) player.movementInput?.sneak = true
                 if (shouldBridge()) {
-                    val target = currentBlockPos.toVec3dCenter().add(Vec3d(startingDirection.directionVec))
-                    moveTo(target)
+                    // Find nearest gap
+                    var nearestGap: BlockPos? = null
+                    for (i in 1..3) {
+                        val checkPos = currentBlockPos.add(startingDirection.directionVec.multiply(i))
+                        if (world.isAirBlock(checkPos) && world.getBlockState(checkPos.down()).isReplaceable) {
+                            nearestGap = checkPos
+                            break
+                        }
+                    }
+                    // Move to nearest gap center
+                    nearestGap?.let { gap ->
+                        val target = gap.toVec3dCenter()
+                        moveTo(target)
+                    }
                 } else {
                     if (!isAboveAir) {
                         moveState = MovementState.RUNNING
@@ -108,6 +132,59 @@ object Pathfinder {
                     moveTo(target)
                 } else {
                     goal = currentBlockPos
+                }
+            }
+            MovementState.DIAGONAL_STUCK -> {
+                goal = null
+                val dir = startingDirection.directionVec
+                val dx = dir.x.toDouble()
+                val dz = dir.z.toDouble()
+                if (diagonalWaitTicks > 0) {
+                    diagonalWaitTicks--
+                    stopMoveTo()
+                    if (debugLevel == IO.DebugLevel.VERBOSE) {
+                        MessageSendHelper.sendChatMessage("${module.chatName} &6[Waiting] &rWaiting for diagonalWaitTicks:${diagonalWaitTicks}")
+                    }
+                    return
+                }
+                if (diagonalTarget1 == null) {
+                    if (debugLevel == IO.DebugLevel.VERBOSE) {
+                        MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &rInto DIAGONAL_STUCK state")
+                    }
+                    diagonalTarget1 = Vec3d(player.posX + (-dx - dz) * rangeMultiplier, player.posY, player.posZ + (-dz + dx) * rangeMultiplier)
+                    diagonalTarget2 = Vec3d(player.posX + (-dx + dz) * rangeMultiplier, player.posY, player.posZ + (-dz - dx) * rangeMultiplier)
+                }
+                val t1 = diagonalTarget1!!
+                val t2 = diagonalTarget2!!
+                when (diagonalStep) {
+                    0 -> {
+                        moveTo(t1)
+                        if (debugLevel == IO.DebugLevel.VERBOSE) {
+                            MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &rMove to ${t1}")
+                        }
+                        if (player.positionVector.distanceTo(t1) < 0.3) {
+                            stopMoveTo()
+                            diagonalStep = 1
+                            diagonalWaitTicks = 20
+                        }
+                    }
+                    1 -> {
+                        moveTo(t2)
+                        if (debugLevel == IO.DebugLevel.VERBOSE) {
+                            MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &rMove to ${t2}")
+                        }
+                        if (player.positionVector.distanceTo(t2) < 0.3) {
+                            stopMoveTo()
+                            if (debugLevel == IO.DebugLevel.VERBOSE) {
+                                MessageSendHelper.sendChatMessage("${module.chatName} &6[Action] &rDIAGONAL_STUCK Move Done")
+                            }
+                            diagonalTarget1 = null
+                            diagonalTarget2 = null
+                            diagonalStep = 0
+                            diagonalWaitTicks = 20
+                            moveState = MovementState.RUNNING
+                        }
+                    }
                 }
             }
         }
@@ -130,22 +207,41 @@ object Pathfinder {
     }
 
     fun SafeClientEvent.shouldBridge(): Boolean {
-        return scaffold
-            && containerTask.taskState == TaskState.DONE
-            && world.isAirBlock(currentBlockPos.add(startingDirection.directionVec))
-            && world.isAirBlock(currentBlockPos.add(startingDirection.directionVec).up())
-            && world.getBlockState(currentBlockPos.add(startingDirection.directionVec).down()).isReplaceable
-            && tasks.values.none { it.taskState == TaskState.PENDING_PLACE }
-            && tasks.values.filter {
-                it.taskState == TaskState.PLACE
-                    || it.taskState == TaskState.LIQUID
-            }.none { it.sequence.isNotEmpty() }
+        if (!scaffold || containerTask.taskState != TaskState.DONE) return false
+        if (tasks.values.filter { it.taskState == TaskState.PLACE || it.taskState == TaskState.LIQUID }.any { it.sequence.isNotEmpty() }) return false
+
+        // Check front 3 blocks
+        for (i in 1..3) {
+            val checkPos = currentBlockPos.add(startingDirection.directionVec.multiply(i))
+            if (world.isAirBlock(checkPos) && world.getBlockState(checkPos.down()).isReplaceable) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun SafeClientEvent.moveTo(target: Vec3d) {
         player.motionX = (target.x - player.posX).coerceIn((-moveSpeed).toDouble(), moveSpeed.toDouble())
         player.motionZ = (target.z - player.posZ).coerceIn((-moveSpeed).toDouble(), moveSpeed.toDouble())
     }
+
+    private fun SafeClientEvent.stopMoveTo() {
+        player.motionX = 0.0
+        player.motionZ = 0.0
+    }
+
+    /*fun SafeClientEvent.isDiagonalCenter(): Boolean {
+        val dir = startingDirection.directionVec
+        val sideX = -dir.z
+        val sideZ = dir.x
+        for (i in -width / 2..width / 2) {
+            val checkPos = player.flooredPosition.add(sideX * i, 0, sideZ * i)
+            if (world.isAirBlock(checkPos)) {
+                return false
+            }
+        }
+        return true
+    }*/
 
     fun updateProcess() {
         if (!active) {

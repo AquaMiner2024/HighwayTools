@@ -32,10 +32,12 @@ import net.minecraft.util.EnumHand
 import net.minecraft.util.SoundCategory
 import net.minecraft.util.math.AxisAlignedBB
 import net.minecraft.util.math.BlockPos
+import net.minecraft.util.math.Vec3d
 import trombone.*
 import trombone.IO.disableError
 import trombone.Pathfinder.moveState
 import trombone.Pathfinder.shouldBridge
+import trombone.Pathfinder.startingDirection
 import trombone.Trombone.module
 import trombone.blueprint.BlueprintGenerator
 import trombone.handler.Container
@@ -55,6 +57,10 @@ import trombone.interaction.Place.placeBlock
 
 object TaskExecutor {
     private val restockTimer = TickTimer()
+    private var lastPos = Vec3d.ZERO
+
+    private var stayTicks = 0
+    private var lastDiagonalStuckTick = 0L
 
     fun SafeClientEvent.doTask(blockTask: BlockTask, updateOnly: Boolean = false) {
         if (!updateOnly) blockTask.onTick()
@@ -88,7 +94,8 @@ object TaskExecutor {
                 blockTask.onStuck()
             }
             TaskState.IMPOSSIBLE_PLACE -> {
-                if (!updateOnly) doImpossiblePlace()
+                //if (!updateOnly) doImpossiblePlace()
+                doImpossiblePlace()
             }
             TaskState.DONE -> { /* do nothing */ }
         }
@@ -477,11 +484,29 @@ object TaskExecutor {
     }
 
     private fun SafeClientEvent.doImpossiblePlace() {
+        if (player.positionVector.distanceTo(lastPos) < 0.01) {
+            stayTicks++
+        } else {
+            stayTicks = 0
+        }
+        lastPos = player.positionVector
         if (shouldBridge()
             && moveState != Pathfinder.MovementState.RESTOCK
+            && moveState != Pathfinder.MovementState.DIAGONAL_STUCK
             && player.positionVector.distanceTo(Pathfinder.currentBlockPos.toVec3dCenter()) < 1
         ) {
             moveState = Pathfinder.MovementState.BRIDGE
+        }
+        if (stayTicks > 40
+            && moveState != Pathfinder.MovementState.RESTOCK
+            && moveState != Pathfinder.MovementState.BRIDGE
+            && moveState != Pathfinder.MovementState.DIAGONAL_STUCK
+            && startingDirection.isDiagonal
+            && (world.totalWorldTime - lastDiagonalStuckTick) > 100L
+        ) {
+            moveState = Pathfinder.MovementState.DIAGONAL_STUCK
+            lastDiagonalStuckTick = world.totalWorldTime
+            stayTicks = 0
         }
     }
 }
