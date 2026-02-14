@@ -133,6 +133,8 @@ object Pathfinder {
             }
             MovementState.DIAGONAL_STUCK -> {
                 goal = null
+                val isAboveAir = world.getBlockState(player.flooredPosition.down()).isReplaceable
+                if (isAboveAir) player.movementInput?.sneak = true
                 val dir = startingDirection.directionVec
                 val dx = dir.x.toDouble()
                 val dz = dir.z.toDouble()

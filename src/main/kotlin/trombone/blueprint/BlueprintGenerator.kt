@@ -113,10 +113,10 @@ object BlueprintGenerator {
     }
 
     private fun generateFloor(basePos: BlockPos, xDirection: Direction) {
-        val wid = if (cornerBlock && width > 2) {
-            width
-        } else {
+        val wid = if (!cornerBlock && width > 2) {
             width - 2
+        } else {
+            width
         }
         for (w in 0 until wid) {
             val x = w - wid / 2
@@ -138,6 +138,13 @@ object BlueprintGenerator {
     }
 
     private fun generateRoof(basePos: BlockPos, xDirection: Direction) {
+        if (startingDirection.isDiagonal) {
+            for (w in -1 until width + 1) {
+                val x = w - width / 2
+                val pos = basePos.add(xDirection.directionVec.multiply(x))
+                blueprint[pos.up(height + 1)] = BlueprintTask(fillerMat, isFiller = true)
+            }
+        }
         for (w in 0 until width) {
             val x = w - width / 2
             val pos = basePos.add(xDirection.directionVec.multiply(x))

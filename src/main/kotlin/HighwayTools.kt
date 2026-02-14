@@ -55,7 +55,7 @@ object HighwayTools : PluginModule(
 
     // blueprint
     val mode by setting("Mode", Structure.HIGHWAY, { page == Page.BLUEPRINT }, description = "Choose the structure")
-    val width by setting("Width", 6, 1..11, 1, { page == Page.BLUEPRINT }, description = "Sets the width of blueprint", unit = " blocks")
+    val width by setting("Width", 6, 1..15, 1, { page == Page.BLUEPRINT }, description = "Sets the width of blueprint", unit = " blocks")
     val height by setting("Height", 4, 2..6, 1, { page == Page.BLUEPRINT && clearSpace }, description = "Sets height of blueprint", unit = " blocks")
     val backfill by setting("Backfill", false, { page == Page.BLUEPRINT && mode == Structure.TUNNEL }, description = "Fills the tunnel behind you")
     val clearSpace by setting("Clear Space", true, { page == Page.BLUEPRINT && mode == Structure.HIGHWAY }, description = "Clears out the tunnel if necessary")
@@ -93,9 +93,9 @@ object HighwayTools : PluginModule(
     val illegalPlacements by setting("Illegal Placements", false, { page == Page.PLACING }, description = "Do not use on 2b2t. Tries to interact with invisible surfaces")
     val scaffold by setting("Scaffold", true, { page == Page.PLACING }, description = "Tries to bridge / scaffold when stuck placing")
     val placementSearch by setting("Place Deep Search", 2, 1..4, 1, { page == Page.PLACING }, description = "EXPERIMENTAL: Attempts to find a support block for placing against", unit = " blocks")
-    val rangeMultiplier by setting("Range Multiplier", 0.3f, 0.3f..1.0f, 0.1f, { page == Page.PLACING }, description = "Range of move distances when stuck at diagonal highway")
-    val waitTicks by setting("Wait Ticks", 1, 0..20, 1, { page == Page.PLACING }, description = "How much ticks to wait when DiagonalStuck move to a place")
-    val restartInterval by setting("Restart Interval", 3, 0..100, 1, { page == Page.PLACING }, description = "How much ticks interval of DIAGONAL_STUCK state can be re-trigger")
+    val rangeMultiplier by setting("Range Multiplier", 0.3f, 0.3f..3.0f, 0.1f, { page == Page.PLACING }, description = "Range of move distances when stuck at diagonal highway")
+    val waitTicks by setting("Wait Ticks", 0, 0..20, 1, { page == Page.PLACING }, description = "How much ticks to wait when DiagonalStuck move to a place")
+    val restartInterval by setting("Restart Interval", 40, 0..100, 1, { page == Page.PLACING }, description = "How much ticks interval of DIAGONAL_STUCK state can be re-trigger")
 
     // storage management
     val storageManagement by setting("Manage Storage", true, { page == Page.STORAGE_MANAGEMENT }, description = "Choose to interact with container using only packets")
