@@ -4,6 +4,7 @@ import HighwayTools.anonymizeStats
 import HighwayTools.blacklistBlocks
 import HighwayTools.debugLevel
 import HighwayTools.dynamicDelay
+import HighwayTools.entityLandfill
 import HighwayTools.food
 import HighwayTools.ignoreBlocks
 import HighwayTools.manageFood
@@ -140,9 +141,20 @@ object TaskManager {
 
                 /* is blocked by entity */
                 if (!world.checkNoEntityCollision(AxisAlignedBB(blockPos), null)) {
-                    val blockTask = BlockTask(blockPos, TaskState.DONE, currentState.block)
-                    addTask(blockTask, blueprintTask)
-                    return
+                    if (entityLandfill) {
+                        if (player.getPositionEyes(1f).distanceTo(blockPos.toVec3dCenter()) < 3.5) {
+                            if (tasks[blockPos]?.taskState != TaskState.LANDFILL) {
+                                val landfillTask = BlockTask(blockPos, TaskState.BREAK, blueprintTask.targetBlock)
+                                landfillTask.updateState(TaskState.LANDFILL)
+                                addTask(landfillTask, blueprintTask)
+                            }
+                            return
+                        }
+                    } else {
+                        val blockTask = BlockTask(blockPos, TaskState.DONE, currentState.block)
+                        addTask(blockTask, blueprintTask)
+                        return
+                    }
                 }
 
                 val blockTask = BlockTask(blockPos, TaskState.PLACE, blueprintTask.targetBlock)
@@ -339,7 +351,7 @@ object TaskManager {
     }
 
     private fun blockTaskComparator() = compareBy<BlockTask> {
-        it.taskState.ordinal
+        if (it.taskState == TaskState.LANDFILL) -1 else it.taskState.ordinal
     }.thenBy {
         it.stuckTicks
     }.thenBy {

@@ -103,6 +103,7 @@ object HighwayTools : PluginModule(
     val rangeMultiplier by setting("Range Multiplier", 0.3f, 0.3f..3.0f, 0.1f, { page == Page.PLACING }, description = "Range of move distances when stuck at diagonal highway")
     val waitTicks by setting("Wait Ticks", 0, 0..20, 1, { page == Page.PLACING }, description = "How much ticks to wait when DiagonalStuck move to a place")
     val restartInterval by setting("Restart Interval", 40, 0..100, 1, { page == Page.PLACING }, description = "How much ticks interval of DIAGONAL_STUCK state can be re-trigger")
+    val entityLandfill by setting("Entity Landfill", false, { page == Page.PLACING }, description = "Tries to break the block under entity when entity blocked the place")
 
     // storage management
     val storageManagement by setting("Manage Storage", true, { page == Page.STORAGE_MANAGEMENT }, description = "Choose to interact with container using only packets")

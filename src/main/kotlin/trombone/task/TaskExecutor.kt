@@ -12,6 +12,7 @@ import HighwayTools.interactionLimit
 import HighwayTools.keepFreeSlots
 import HighwayTools.leaveEmptyShulkers
 import HighwayTools.material
+import HighwayTools.maxReach
 import HighwayTools.mode
 import HighwayTools.pickupDelay
 import HighwayTools.restartInterval
@@ -61,7 +62,7 @@ object TaskExecutor {
     private var lastPos = Vec3d.ZERO
 
     private var stayTicks = 0
-    private var lastDiagonalStuckTick = 0L
+    private var lastStuckTick = 0L
 
     fun SafeClientEvent.doTask(blockTask: BlockTask, updateOnly: Boolean = false) {
         if (!updateOnly) blockTask.onTick()
@@ -96,6 +97,9 @@ object TaskExecutor {
             }
             TaskState.IMPOSSIBLE_PLACE -> {
                 if (!updateOnly) doImpossiblePlace()
+            }
+            TaskState.LANDFILL -> {
+                if (!updateOnly) doLandfill(blockTask, updateOnly)
             }
             TaskState.DONE -> { /* do nothing */ }
         }
@@ -502,7 +506,7 @@ object TaskExecutor {
         lastPos = player.positionVector
         if (shouldBridge()
             && moveState != Pathfinder.MovementState.RESTOCK
-            && moveState != Pathfinder.MovementState.DIAGONAL_STUCK
+            && moveState != Pathfinder.MovementState.ESCAPE
             && player.positionVector.distanceTo(Pathfinder.currentBlockPos.toVec3dCenter()) < 1
         ) {
             moveState = Pathfinder.MovementState.BRIDGE
@@ -510,13 +514,43 @@ object TaskExecutor {
         if (stayTicks > 40
             && moveState != Pathfinder.MovementState.RESTOCK
             && moveState != Pathfinder.MovementState.BRIDGE
-            && moveState != Pathfinder.MovementState.DIAGONAL_STUCK
-            && startingDirection.isDiagonal
-            && (world.totalWorldTime - lastDiagonalStuckTick) > restartInterval
+            && moveState != Pathfinder.MovementState.ESCAPE
+            && (startingDirection.isDiagonal || TaskManager.tasks.values.any { it.taskState == TaskState.LANDFILL })
+            && (world.totalWorldTime - lastStuckTick) > restartInterval
         ) {
-            moveState = Pathfinder.MovementState.DIAGONAL_STUCK
-            lastDiagonalStuckTick = world.totalWorldTime
+            moveState = Pathfinder.MovementState.ESCAPE
+            lastStuckTick = world.totalWorldTime
             stayTicks = 0
+        }
+    }
+
+    private fun SafeClientEvent.doLandfill(blockTask: BlockTask, updateOnly: Boolean) {
+        // onTick check is entity in here
+        if (world.checkNoEntityCollision(AxisAlignedBB(blockTask.blockPos), null)) {
+            blockTask.updateState(TaskState.PLACE)
+            if (debugLevel == IO.DebugLevel.VERBOSE) {
+                MessageSendHelper.sendChatMessage("${module.chatName} &b[Landfill] &rEntity Landfill done")
+            }
+            return
+        }
+        // Entity still in here
+        var landFillPos = blockTask.blockPos.down()
+        while (world.getBlockState(landFillPos).block == Blocks.AIR && blockTask.blockPos.y - landFillPos.y < 5) {
+            landFillPos = landFillPos.down()
+        }
+        val landfillState = world.getBlockState(landFillPos)
+        if (landfillState.block == Blocks.AIR) return
+        // Try break block
+        if (updateOnly) return
+        val landfillTask = BlockTask(landFillPos, TaskState.BREAK, landfillState.block)
+        landfillTask.updateTask(this)
+        if (landfillTask.eyeDistance < maxReach) {
+            if (swapOrMoveBestTool(landfillTask) && Inventory.packetLimiter.size < interactionLimit) {
+                mineBlock(landfillTask)
+                if (debugLevel == IO.DebugLevel.VERBOSE) {
+                    MessageSendHelper.sendChatMessage("${module.chatName} &b[Landfill] &rEntity detected, digging @(${landFillPos.asString()})")
+                }
+            }
         }
     }
 }

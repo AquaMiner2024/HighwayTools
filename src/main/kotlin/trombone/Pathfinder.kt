@@ -41,13 +41,13 @@ object Pathfinder {
     private var targetBlockPos = BlockPos(0, -1, 0)
     var distancePending = 0
 
-    private var diagonalTarget1: Vec3d? = null
-    private var diagonalTarget2: Vec3d? = null
-    private var diagonalStep = 0
-    private var diagonalWaitTicks = 0
+    private var escapeTarget1: Vec3d? = null
+    private var escapeTarget2: Vec3d? = null
+    private var escapeStep = 0
+    private var escapeWaitTicks = 0
 
     enum class MovementState {
-        RUNNING, PICKUP, BRIDGE, RESTOCK, DIAGONAL_STUCK
+        RUNNING, PICKUP, BRIDGE, RESTOCK, ESCAPE
     }
 
     fun SafeClientEvent.setupPathing() {
@@ -61,8 +61,8 @@ object Pathfinder {
         when (moveState) {
             MovementState.RUNNING -> {
                 goal = currentBlockPos
-                diagonalTarget1 = null
-                diagonalTarget2 = null
+                escapeTarget1 = null
+                escapeTarget2 = null
 
                 // ToDo: Rewrite
                 if (currentBlockPos.distanceTo(targetBlockPos) < 2 ||
@@ -131,41 +131,63 @@ object Pathfinder {
                     goal = currentBlockPos
                 }
             }
-            MovementState.DIAGONAL_STUCK -> {
+            MovementState.ESCAPE -> {
                 goal = null
                 val isAboveAir = world.getBlockState(player.flooredPosition.down()).isReplaceable
                 if (isAboveAir) player.movementInput?.sneak = true
                 val dir = startingDirection.directionVec
                 val dx = dir.x.toDouble()
                 val dz = dir.z.toDouble()
-                if (diagonalWaitTicks > 0) {
-                    diagonalWaitTicks--
+                if (escapeWaitTicks > 0) {
+                    escapeWaitTicks--
                     stopMoveTo()
                     return
                 }
-                if (diagonalTarget1 == null) {
-                    diagonalTarget1 = Vec3d(player.posX + (-dx - dz) * rangeMultiplier, player.posY, player.posZ + (-dz + dx) * rangeMultiplier)
-                    diagonalTarget2 = Vec3d(player.posX + (-dx + dz) * rangeMultiplier, player.posY, player.posZ + (-dz - dx) * rangeMultiplier)
+                if (escapeTarget1 == null && escapeTarget2 == null) {
+                    if (startingDirection.isDiagonal) {
+                        escapeTarget1 = Vec3d(
+                            player.posX + (-dx - dz) * rangeMultiplier,
+                            player.posY,
+                            player.posZ + (-dz + dx) * rangeMultiplier
+                        )
+                        escapeTarget2 = Vec3d(
+                            player.posX + (-dx + dz) * rangeMultiplier,
+                            player.posY,
+                            player.posZ + (-dz - dx) * rangeMultiplier
+                        )
+                    }
+                    else {
+                        escapeTarget1 = Vec3d(
+                            player.posX + (dx * 0.5) + dz * rangeMultiplier,
+                            player.posY,
+                            player.posZ + (dz * 0.5) + -dx * rangeMultiplier
+                        )
+                        escapeTarget2 = Vec3d(
+                            player.posX + (dx * 0.5) - dz * rangeMultiplier,
+                            player.posY,
+                            player.posZ + (dz * 0.5) - -dx * rangeMultiplier
+                        )
+                    }
                 }
-                val t1 = diagonalTarget1!!
-                val t2 = diagonalTarget2!!
-                when (diagonalStep) {
+                val t1 = escapeTarget1!!
+                val t2 = escapeTarget2!!
+                when (escapeStep) {
                     0 -> {
                         moveTo(t1)
                         if (player.positionVector.distanceTo(t1) < 0.3) {
                             stopMoveTo()
-                            diagonalStep = 1
-                            diagonalWaitTicks = waitTicks
+                            escapeStep = 1
+                            escapeWaitTicks = waitTicks
                         }
                     }
                     1 -> {
                         moveTo(t2)
                         if (player.positionVector.distanceTo(t2) < 0.3) {
                             stopMoveTo()
-                            diagonalTarget1 = null
-                            diagonalTarget2 = null
-                            diagonalStep = 0
-                            diagonalWaitTicks = waitTicks
+                            escapeTarget1 = null
+                            escapeTarget2 = null
+                            escapeStep = 0
+                            escapeWaitTicks = waitTicks
                             moveState = MovementState.RUNNING
                         }
                     }
