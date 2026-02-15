@@ -15,7 +15,6 @@ import HighwayTools.material
 import HighwayTools.mode
 import HighwayTools.pickupDelay
 import HighwayTools.restartInterval
-import HighwayTools.blacklistBlocks
 import com.lambda.client.event.SafeClientEvent
 import com.lambda.client.module.modules.player.InventoryManager
 import com.lambda.client.util.TickTimer
@@ -105,6 +104,12 @@ object TaskExecutor {
     private fun SafeClientEvent.doRestock() {
         val container = player.openContainer
         val currentTick = mc.player.ticksExisted.toLong()
+        /*if (!containerTask.isLoaded) {
+            if (debugLevel == IO.DebugLevel.VERBOSE) {
+                MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] &rShulker box didn't loaded")
+            }
+            return
+        }*/
         if (currentTick - containerTask.lastActionTick < pickupDelay) {
             if (debugLevel == IO.DebugLevel.VERBOSE) {
                 MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] &rWait For Pickup Delay")
@@ -112,8 +117,11 @@ object TaskExecutor {
             return
         }
 
-        if (mc.currentScreen !is GuiContainer && !containerTask.isLoaded) {
+        if (mc.currentScreen !is GuiContainer || !containerTask.isLoaded) {
             containerTask.updateState(TaskState.OPEN_CONTAINER)
+            if (debugLevel == IO.DebugLevel.VERBOSE) {
+                MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] &rShulker box didn't loaded")
+            }
             return
         }
 
@@ -126,6 +134,7 @@ object TaskExecutor {
         }
 
         if (leaveEmptyShulkers
+            && containerTask.isLoaded
             && !InventoryManager.ejectList.contains(containerTask.item.registryName.toString())
             && containerTask.isShulker()
             && container.getSlots(0..26).all {

@@ -173,16 +173,4 @@ object Break {
             player.swingArm(EnumHand.MAIN_HAND)
         }
     }
-
-    private suspend fun sendInstantMinePackets(pos: BlockPos, side: EnumFacing) {
-        //onMainThreadSafe {
-            //connection.sendPacket(CPacketPlayerDigging(CPacketPlayerDigging.Action.START_DESTROY_BLOCK, pos, side))
-            //player.swingArm(EnumHand.MAIN_HAND)
-        //}
-        //delay(10L)
-        onMainThreadSafe {
-            connection.sendPacket(CPacketPlayerDigging(CPacketPlayerDigging.Action.STOP_DESTROY_BLOCK, pos, side))
-            player.swingArm(EnumHand.MAIN_HAND)
-        }
-    }
 }
