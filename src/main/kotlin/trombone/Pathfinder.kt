@@ -191,10 +191,10 @@ object Pathfinder {
     }
 
     fun SafeClientEvent.shouldBridge(): Boolean {
-        if (!scaffold || containerTask.taskState != TaskState.DONE) return false
-        if (tasks.values.filter { it.taskState == TaskState.PLACE || it.taskState == TaskState.LIQUID }.any { it.sequence.isNotEmpty() }) return false
-
         // Check front 3 blocks
+        if (!scaffold || containerTask.taskState != TaskState.DONE) return false
+        if (tasks.values.filter { it.taskState == TaskState.PLACE || it.taskState == TaskState.LIQUID }
+                .any { it.sequence.isNotEmpty() }) return false
         for (i in 1..3) {
             val checkPos = currentBlockPos.add(startingDirection.directionVec.multiply(i))
             if (world.isAirBlock(checkPos) && world.getBlockState(checkPos.down()).isReplaceable) {

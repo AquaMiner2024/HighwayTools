@@ -10,29 +10,59 @@ object HighwayToolsCommand : ClientCommand(
 ) {
 
     init {
-        literal("add", "new", "+") {
-            block("block") { blockArg ->
-                execute("Adds a block to ignore list") {
-                    val added = HighwayTools.ignoreBlocks.add(blockArg.value.registryName.toString())
-                    if (added) {
-                        printSettings()
-                        sendChatMessage("Added &7${blockArg.value.localizedName}&r to ignore list.")
-                    } else {
-                        sendChatMessage("&7${blockArg.value.localizedName}&r is already ignored.")
+        literal("ignore") {
+            literal("add", "new", "+") {
+                block("block") { blockArg ->
+                    execute("Adds a block to ignore list") {
+                        val added = HighwayTools.ignoreBlocks.add(blockArg.value.registryName.toString())
+                        if (added) {
+                            printSettings()
+                            sendChatMessage("Added &7${blockArg.value.localizedName}&r to ignore list.")
+                        } else {
+                            sendChatMessage("&7${blockArg.value.localizedName}&r is already ignored.")
+                        }
+                    }
+                }
+            }
+            literal("remove", "rem", "-", "del") {
+                block("block") { blockArg ->
+                    execute("Removes a block from ignore list") {
+                        val removed = HighwayTools.ignoreBlocks.remove(blockArg.value.registryName.toString())
+                        if (removed) {
+                            printSettings()
+                            sendChatMessage("Removed &7${blockArg.value.localizedName}&r from ignore list.")
+                        } else {
+                            sendChatMessage("&7${blockArg.value.localizedName}&r is not yet ignored.")
+                        }
                     }
                 }
             }
         }
 
-        literal("remove", "rem", "-", "del") {
-            block("block") { blockArg ->
-                execute("Removes a block from ignore list") {
-                    val removed = HighwayTools.ignoreBlocks.remove(blockArg.value.registryName.toString())
-                    if (removed) {
-                        printSettings()
-                        sendChatMessage("Removed &7${blockArg.value.localizedName}&r from ignore list.")
-                    } else {
-                        sendChatMessage("&7${blockArg.value.localizedName}&r is not yet ignored.")
+        literal("blacklist") {
+            literal("add", "new", "+") {
+                block("block") { blockArg ->
+                    execute("Adds a block to blacklist") {
+                        val added = HighwayTools.blacklistBlocks.add(blockArg.value.registryName.toString())
+                        if (added) {
+                            printSettings()
+                            sendChatMessage("Added &7${blockArg.value.localizedName}&r to blacklist.")
+                        } else {
+                            sendChatMessage("&7${blockArg.value.localizedName}&r is already blacklist.")
+                        }
+                    }
+                }
+            }
+            literal("remove", "rem", "-", "del") {
+                block("block") { blockArg ->
+                    execute("Removes a block from blacklist") {
+                        val removed = HighwayTools.blacklistBlocks.remove(blockArg.value.registryName.toString())
+                        if (removed) {
+                            printSettings()
+                            sendChatMessage("Removed &7${blockArg.value.localizedName}&r from blacklist.")
+                        } else {
+                            sendChatMessage("&7${blockArg.value.localizedName}&r is not yet blacklist.")
+                        }
                     }
                 }
             }

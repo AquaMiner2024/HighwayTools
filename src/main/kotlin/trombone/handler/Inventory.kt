@@ -1,5 +1,6 @@
 package trombone.handler
 
+import HighwayTools.blacklistBlocks
 import HighwayTools.keepFreeSlots
 import HighwayTools.material
 import HighwayTools.saveMaterial
@@ -103,25 +104,25 @@ object Inventory {
 
     private fun SafeClientEvent.findMaterial(blockTask: BlockTask): Block {
         return if (blockTask.targetBlock == material) {
-            if (player.inventorySlots.countBlock(material) > saveMaterial) {
+            if (!blacklistBlocks.contains(material.registryName.toString()) && player.inventorySlots.countBlock(material) > saveMaterial) {
                 material
             } else {
                 restockFallback(blockTask)
                 Blocks.AIR
             }
         } else {
-            if (player.inventorySlots.countBlock(blockTask.targetBlock) > 0) {
+            if (!blacklistBlocks.contains(material.registryName.toString()) && player.inventorySlots.countBlock(blockTask.targetBlock) > 0) {
                 blockTask.targetBlock
             } else {
                 val possibleMaterials = mutableSetOf<Block>()
                 InventoryManager.ejectList.forEach { stringName ->
                     getBlockFromName(stringName)?.let {
-                        if (player.inventorySlots.countBlock(it) > 0) possibleMaterials.add(it)
+                        if (!blacklistBlocks.contains(material.registryName.toString()) && player.inventorySlots.countBlock(it) > 0) possibleMaterials.add(it)
                     }
                 }
 
                 if (possibleMaterials.isEmpty()) {
-                    if (player.inventorySlots.countBlock(material) > saveMaterial) {
+                    if (!blacklistBlocks.contains(material.registryName.toString()) && player.inventorySlots.countBlock(material) > saveMaterial) {
                         material
                     } else {
                         restockFallback(blockTask)

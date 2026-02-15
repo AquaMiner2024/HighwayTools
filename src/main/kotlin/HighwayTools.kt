@@ -52,6 +52,12 @@ object HighwayTools : PluginModule(
         "minecraft:piston_extension",
         "minecraft:barrier"
     )
+    private val defaultBlacklistBlocks = linkedSetOf(
+        "minecraft:magma",
+        "minecraft:vine",
+        "minecraft:red_mushroom",
+        "minecraft:brown_mushroom"
+    )
 
     // blueprint
     val mode by setting("Mode", Structure.HIGHWAY, { page == Page.BLUEPRINT }, description = "Choose the structure")
@@ -71,6 +77,7 @@ object HighwayTools : PluginModule(
     private val fillerMatSaved = setting("FillerMat", "minecraft:netherrack", { false })
     private val foodItem = setting("FoodItem", "minecraft:golden_apple", { false })
     val ignoreBlocks = setting(CollectionSetting("IgnoreList", defaultIgnoreBlocks, { false }))
+    val blacklistBlocks = setting(CollectionSetting("Blacklist", defaultBlacklistBlocks, { false }))
 
     // behavior
     val maxReach by setting("Max Reach", 4.9f, 1.0f..7.0f, 0.1f, { page == Page.BEHAVIOR }, description = "Sets the range of the blueprint. Decrease when tasks fail!", unit = " blocks")

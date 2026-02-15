@@ -15,6 +15,7 @@ import HighwayTools.material
 import HighwayTools.mode
 import HighwayTools.pickupDelay
 import HighwayTools.restartInterval
+import HighwayTools.blacklistBlocks
 import com.lambda.client.event.SafeClientEvent
 import com.lambda.client.module.modules.player.InventoryManager
 import com.lambda.client.util.TickTimer
@@ -95,8 +96,7 @@ object TaskExecutor {
                 blockTask.onStuck()
             }
             TaskState.IMPOSSIBLE_PLACE -> {
-                //if (!updateOnly) doImpossiblePlace()
-                doImpossiblePlace()
+                if (!updateOnly) doImpossiblePlace()
             }
             TaskState.DONE -> { /* do nothing */ }
         }

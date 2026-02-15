@@ -1,6 +1,7 @@
 package trombone
 
 import HighwayTools.anonymizeStats
+import HighwayTools.blacklistBlocks
 import HighwayTools.disableMode
 import HighwayTools.disableWarnings
 import HighwayTools.fillerMat
@@ -147,6 +148,10 @@ object IO {
 
             ignoreBlocks.forEach {
                 append("\n     §9> §7$it")
+            }
+            append("\n §9> §rBlacklist Blocks:")
+            blacklistBlocks.forEach {
+                append("\n     §9> §7${it}")
             }
 
             MessageSendHelper.sendChatMessage(toString())

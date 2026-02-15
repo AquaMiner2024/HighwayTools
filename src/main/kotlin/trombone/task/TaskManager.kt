@@ -1,6 +1,7 @@
 package trombone.task
 
 import HighwayTools.anonymizeStats
+import HighwayTools.blacklistBlocks
 import HighwayTools.debugLevel
 import HighwayTools.dynamicDelay
 import HighwayTools.food
@@ -16,7 +17,6 @@ import HighwayTools.saveTools
 import HighwayTools.storageManagement
 import HighwayTools.width
 import com.lambda.client.event.SafeClientEvent
-import com.lambda.client.manager.managers.PlayerInventoryManager
 import com.lambda.client.util.items.countItem
 import com.lambda.client.util.items.inventorySlots
 import com.lambda.client.util.items.item
@@ -36,7 +36,6 @@ import net.minecraft.item.ItemFood
 import net.minecraft.item.ItemPickaxe
 import net.minecraft.util.math.AxisAlignedBB
 import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Vec3d
 import trombone.blueprint.BlueprintGenerator.blueprint
 import trombone.blueprint.BlueprintGenerator.generateBluePrint
 import trombone.blueprint.BlueprintGenerator.isInsideBlueprintBuild
@@ -104,6 +103,15 @@ object TaskManager {
                 addTask(blockTask, blueprintTask)
             }
 
+            /* blacklist blocks */
+            shouldBeBlacklist(blockPos, currentState) -> {
+                val blockTask = BlockTask(blockPos, TaskState.BREAK, currentState.block)
+                blockTask.updateTask(this)
+                if (blockTask.eyeDistance < maxReach) {
+                    addTask(blockTask, blueprintTask)
+                }
+            }
+
             /* is in desired state */
             currentState.block == blueprintTask.targetBlock -> {
                 val blockTask = BlockTask(blockPos, TaskState.DONE, currentState.block)
@@ -121,7 +129,8 @@ object TaskManager {
             }
 
             /* to place */
-            currentState.isReplaceable && blueprintTask.targetBlock != Blocks.AIR -> {
+            // 不對vines進行替換放置，因為高版本詭異藤也被顯示為vines，但其無法被使用替換放置
+            currentState.isReplaceable && blueprintTask.targetBlock != Blocks.AIR && currentState.block != Blocks.VINE -> {
                 /* support not needed */
                 if (blueprintTask.isSupport && world.getBlockState(blockPos.up()).block == material) {
                     val blockTask = BlockTask(blockPos, TaskState.DONE, currentState.block)
@@ -315,6 +324,11 @@ object TaskManager {
         ignoreBlocks.contains(currentState.block.registryName.toString())
             && !isInsideBlueprintBuild(blockPos)
             && currentBlockPos.add(startingDirection.directionVec) != blockPos
+
+    private fun shouldBeBlacklist(blockPos: BlockPos, currentState: IBlockState) =
+        blacklistBlocks.contains(currentState.block.registryName.toString())
+                && !isInsideBlueprintBuild(blockPos)
+                && currentBlockPos.add(startingDirection.directionVec) != blockPos
 
     fun clearTasks() {
         tasks.clear()
