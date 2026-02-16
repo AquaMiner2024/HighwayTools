@@ -37,6 +37,7 @@ import net.minecraft.item.ItemFood
 import net.minecraft.item.ItemPickaxe
 import net.minecraft.util.math.AxisAlignedBB
 import net.minecraft.util.math.BlockPos
+import net.minecraft.util.math.Vec3d
 import trombone.blueprint.BlueprintGenerator.blueprint
 import trombone.blueprint.BlueprintGenerator.generateBluePrint
 import trombone.blueprint.BlueprintGenerator.isInsideBlueprintBuild
@@ -56,11 +57,15 @@ import trombone.interaction.Place.extraPlaceDelay
 import trombone.task.TaskExecutor.doTask
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentSkipListSet
+import kotlin.math.abs
 
 object TaskManager {
     val tasks = ConcurrentHashMap<BlockPos, BlockTask>()
     val sortedTasks = ConcurrentSkipListSet(blockTaskComparator())
     var lastTask: BlockTask? = null
+    private var lastPos = Vec3d.ZERO
+
+    private var stayTicks = 0
 
     fun SafeClientEvent.populateTasks() {
         generateBluePrint()
@@ -140,9 +145,14 @@ object TaskManager {
                 }
 
                 /* is blocked by entity */
-                if (!world.checkNoEntityCollision(AxisAlignedBB(blockPos), null)) {
+                if (!world.checkNoEntityCollision(AxisAlignedBB(blockPos), null) && entityLandfill) {
                     if (entityLandfill) {
-                        if (player.getPositionEyes(1f).distanceTo(blockPos.toVec3dCenter()) < 3.5) {
+                        val playerEyePos = player.getPositionEyes(1f)
+                        val diffX = abs(blockPos.x + 0.5 - playerEyePos.x)
+                        val diffZ = abs(blockPos.z + 0.5 - playerEyePos.z)
+                        val isAtSide = (diffZ < 0.1 && diffX < maxReach) || (diffX < 0.1 && diffZ < maxReach)
+                        val isVeryClose = diffX < 0.1 || diffZ < 0.1
+                        if (isAtSide || isVeryClose) {
                             if (tasks[blockPos]?.taskState != TaskState.LANDFILL) {
                                 val landfillTask = BlockTask(blockPos, TaskState.BREAK, blueprintTask.targetBlock)
                                 landfillTask.updateState(TaskState.LANDFILL)
@@ -150,9 +160,10 @@ object TaskManager {
                             }
                             return
                         }
-                    } else {
                         val blockTask = BlockTask(blockPos, TaskState.DONE, currentState.block)
                         addTask(blockTask, blueprintTask)
+                    }
+                    else {
                         return
                     }
                 }
@@ -160,8 +171,19 @@ object TaskManager {
                 val blockTask = BlockTask(blockPos, TaskState.PLACE, blueprintTask.targetBlock)
                 blockTask.updateTask(this)
 
+                if (player.positionVector.distanceTo(lastPos) < 0.01) {
+                    stayTicks++
+                } else {
+                    stayTicks = 0
+                }
+                lastPos = player.positionVector
+
                 if (blockTask.sequence.isNotEmpty()) {
                     addTask(blockTask, blueprintTask)
+                } else if (stayTicks > 10) {
+                    blockTask.updateState(TaskState.IMPOSSIBLE_PLACE)
+                    addTask(blockTask, blueprintTask)
+                    stayTicks = 0
                 } else {
                     blockTask.updateState(TaskState.IMPOSSIBLE_PLACE)
                     addTask(blockTask, blueprintTask)

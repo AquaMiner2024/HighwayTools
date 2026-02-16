@@ -34,12 +34,10 @@ import net.minecraft.util.EnumHand
 import net.minecraft.util.SoundCategory
 import net.minecraft.util.math.AxisAlignedBB
 import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Vec3d
 import trombone.*
 import trombone.IO.disableError
 import trombone.Pathfinder.moveState
 import trombone.Pathfinder.shouldBridge
-import trombone.Pathfinder.startingDirection
 import trombone.Trombone.module
 import trombone.blueprint.BlueprintGenerator
 import trombone.handler.Container
@@ -56,12 +54,11 @@ import trombone.interaction.Break
 import trombone.interaction.Break.mineBlock
 import trombone.interaction.Place
 import trombone.interaction.Place.placeBlock
+import kotlin.math.floor
 
 object TaskExecutor {
     private val restockTimer = TickTimer()
-    private var lastPos = Vec3d.ZERO
 
-    private var stayTicks = 0
     private var lastStuckTick = 0L
 
     fun SafeClientEvent.doTask(blockTask: BlockTask, updateOnly: Boolean = false) {
@@ -498,12 +495,6 @@ object TaskExecutor {
     }
 
     private fun SafeClientEvent.doImpossiblePlace() {
-        if (player.positionVector.distanceTo(lastPos) < 0.01) {
-            stayTicks++
-        } else {
-            stayTicks = 0
-        }
-        lastPos = player.positionVector
         if (shouldBridge()
             && moveState != Pathfinder.MovementState.RESTOCK
             && moveState != Pathfinder.MovementState.ESCAPE
@@ -511,16 +502,13 @@ object TaskExecutor {
         ) {
             moveState = Pathfinder.MovementState.BRIDGE
         }
-        if (stayTicks > 40
-            && moveState != Pathfinder.MovementState.RESTOCK
+        else if (moveState != Pathfinder.MovementState.RESTOCK
             && moveState != Pathfinder.MovementState.BRIDGE
             && moveState != Pathfinder.MovementState.ESCAPE
-            && (startingDirection.isDiagonal || TaskManager.tasks.values.any { it.taskState == TaskState.LANDFILL })
             && (world.totalWorldTime - lastStuckTick) > restartInterval
         ) {
             moveState = Pathfinder.MovementState.ESCAPE
             lastStuckTick = world.totalWorldTime
-            stayTicks = 0
         }
     }
 
@@ -534,21 +522,43 @@ object TaskExecutor {
             return
         }
         // Entity still in here
-        var landFillPos = blockTask.blockPos.down()
+        val targetBlocks = mutableSetOf<BlockPos>()
+        world.getEntitiesWithinAABBExcludingEntity(null,AxisAlignedBB(blockTask.blockPos)).filterNotNull().forEach { entity ->
+            val bb = entity.entityBoundingBox
+            val y = floor(bb.minY).toInt() - 1
+            val minX = floor(bb.minX).toInt()
+            val maxX = floor(bb.maxX).toInt()
+            val minZ = floor(bb.minZ).toInt()
+            val maxZ = floor(bb.maxZ).toInt()
+            for (x in minX..maxX) {
+                for (z in minZ..maxZ) {
+                    var floorPos = BlockPos(x, y, z)
+                    var limit = 0
+                    while (world.isAirBlock(floorPos) && limit < 2) {
+                        floorPos = floorPos.down()
+                        limit++
+                    }
+                    if (!world.isAirBlock(floorPos)) targetBlocks.add(floorPos)
+                }
+            }
+        }
+        if (updateOnly) return
+        /*var landFillPos = blockTask.blockPos.down()
         while (world.getBlockState(landFillPos).block == Blocks.AIR && blockTask.blockPos.y - landFillPos.y < 5) {
             landFillPos = landFillPos.down()
         }
-        val landfillState = world.getBlockState(landFillPos)
-        if (landfillState.block == Blocks.AIR) return
+        if (landfillState.block == Blocks.AIR) return*/
         // Try break block
-        if (updateOnly) return
-        val landfillTask = BlockTask(landFillPos, TaskState.BREAK, landfillState.block)
-        landfillTask.updateTask(this)
-        if (landfillTask.eyeDistance < maxReach) {
-            if (swapOrMoveBestTool(landfillTask) && Inventory.packetLimiter.size < interactionLimit) {
-                mineBlock(landfillTask)
-                if (debugLevel == IO.DebugLevel.VERBOSE) {
-                    MessageSendHelper.sendChatMessage("${module.chatName} &b[Landfill] &rEntity detected, digging @(${landFillPos.asString()})")
+        targetBlocks.forEach { pos ->
+            val state = world.getBlockState(pos)
+            val task = BlockTask(pos, TaskState.BREAK, state.block)
+            task.updateTask(this)
+            if (task.eyeDistance < maxReach) {
+                if (swapOrMoveBestTool(task) && Inventory.packetLimiter.size < interactionLimit) {
+                    mineBlock(task)
+                    if (debugLevel == IO.DebugLevel.VERBOSE) {
+                        MessageSendHelper.sendChatMessage("${module.chatName} &b[Landfill] &rEntity detected, digging @(${pos.asString()})")
+                    }
                 }
             }
         }
