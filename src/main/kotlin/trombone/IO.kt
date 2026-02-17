@@ -159,15 +159,16 @@ object IO {
     }
 
     fun SafeClientEvent.disableError(error: String) {
-        MessageSendHelper.sendErrorMessage("${module.chatName} §c[!] $error")
         mc.soundHandler.playSound(PositionedSoundRecord.getRecord(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f))
         when (disableMode) {
             DisableMode.ANTI_AFK -> {
+                MessageSendHelper.sendErrorMessage("${module.chatName} §c[!] $error")
                 module.disable()
                 MessageSendHelper.sendWarningMessage("${module.chatName} §c[!] ${TextFormatting.AQUA}Going into AFK mode.")
                 AntiAFK.enable()
             }
             DisableMode.LOGOUT -> {
+                MessageSendHelper.sendErrorMessage("${module.chatName} §c[!] $error")
                 module.disable()
                 MessageSendHelper.sendWarningMessage("${module.chatName} §c[!] ${TextFormatting.DARK_RED}CAUTION: Logging off in 1 minute!")
                 defaultScope.launch {
@@ -190,6 +191,7 @@ object IO {
             }
             DisableMode.DISABLE -> {
                 // Disable
+                MessageSendHelper.sendErrorMessage("${module.chatName} §c[!] $error")
                 module.disable()
             }
         }
