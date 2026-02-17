@@ -122,7 +122,7 @@ object HighwayTools : PluginModule(
     val saveFood by setting("Save Food", 1, 0..64, 1, { page == Page.STORAGE_MANAGEMENT && manageFood && storageManagement}, description = "How many food items are saved")
     val saveXP by setting("Save XP", 1, 0..64, 1, { page == Page.STORAGE_MANAGEMENT && manageXP && storageManagement}, description = "How many XP items are saved")
     val minDistance by setting("Min Container Distance", 1.5, 0.0..3.0, 0.1, { page == Page.STORAGE_MANAGEMENT && storageManagement }, description = "Avoid player movement collision with placement.", unit = " blocks")
-    val disableMode by setting("Disable Mode", DisableMode.NONE, { page == Page.STORAGE_MANAGEMENT }, description = "Choose action when bot is out of materials or tools")
+    val disableMode by setting("Disable Mode", DisableMode.DISABLE, { page == Page.STORAGE_MANAGEMENT }, description = "Choose action when bot is out of materials or tools")
     val usingProxy by setting("Proxy", false, { disableMode == DisableMode.LOGOUT && page == Page.STORAGE_MANAGEMENT }, description = "Enable this if you are using a proxy to call the given command")
     val proxyCommand by setting("Proxy Command", "/dc", { usingProxy && disableMode == DisableMode.LOGOUT && page == Page.STORAGE_MANAGEMENT }, description = "Command to be sent to log out")
 

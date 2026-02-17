@@ -47,7 +47,7 @@ import kotlin.math.abs
 
 object IO {
     enum class DisableMode {
-        NONE, ANTI_AFK, LOGOUT
+        DISABLE, WAIT, ANTI_AFK, LOGOUT
     }
 
     enum class DebugLevel {
@@ -161,13 +161,14 @@ object IO {
     fun SafeClientEvent.disableError(error: String) {
         MessageSendHelper.sendErrorMessage("${module.chatName} §c[!] $error")
         mc.soundHandler.playSound(PositionedSoundRecord.getRecord(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f))
-        module.disable()
         when (disableMode) {
             DisableMode.ANTI_AFK -> {
+                module.disable()
                 MessageSendHelper.sendWarningMessage("${module.chatName} §c[!] ${TextFormatting.AQUA}Going into AFK mode.")
                 AntiAFK.enable()
             }
             DisableMode.LOGOUT -> {
+                module.disable()
                 MessageSendHelper.sendWarningMessage("${module.chatName} §c[!] ${TextFormatting.DARK_RED}CAUTION: Logging off in 1 minute!")
                 defaultScope.launch {
                     delay(6000L)
@@ -184,8 +185,12 @@ object IO {
                     }
                 }
             }
-            DisableMode.NONE -> {
-                // Nothing
+            DisableMode.WAIT -> {
+                // Do Notting
+            }
+            DisableMode.DISABLE -> {
+                // Disable
+                module.disable()
             }
         }
     }
