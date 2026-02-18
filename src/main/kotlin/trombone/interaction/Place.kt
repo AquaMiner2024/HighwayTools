@@ -50,12 +50,12 @@ object Place {
 
                 placeBlockNormal(blockTask, last.pos, last.side)
             }
-//            else -> {
+            //else -> {
                 // ToDo: Rewrite deep place
-//                blockTask.sequence.forEach {
-//                    addTaskToPending(it.pos, TaskState.PLACE, fillerMat)
-//                }
-//            }
+                //blockTask.sequence.forEach {
+                    //addTaskToPending(it.pos, TaskState.PLACE, fillerMat)
+                //}
+            //}
         }
     }
 

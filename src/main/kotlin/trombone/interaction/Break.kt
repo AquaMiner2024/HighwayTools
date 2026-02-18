@@ -45,10 +45,9 @@ object Break {
         if (blockState.block == Blocks.FIRE) {
             getNeighbour(blockTask.blockPos, 1, maxReach, !illegalPlacements)?.let {
                 lastHitVec = getHitVec(it.pos, it.side)
-
                 extinguishFire(blockTask, it.pos, it.side)
             } ?: run {
-                blockTask.updateState(TaskState.PLACE)
+                blockTask.updateState(TaskState.DONE)
             }
         }
         else {

@@ -38,10 +38,10 @@ import net.minecraft.item.ItemPickaxe
 import net.minecraft.util.math.AxisAlignedBB
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Vec3d
+import trombone.IO
 import trombone.blueprint.BlueprintGenerator.blueprint
 import trombone.blueprint.BlueprintGenerator.generateBluePrint
 import trombone.blueprint.BlueprintGenerator.isInsideBlueprintBuild
-import trombone.IO.DebugLevel
 import trombone.Pathfinder.MovementState
 import trombone.Pathfinder.currentBlockPos
 import trombone.Pathfinder.moveState
@@ -145,25 +145,18 @@ object TaskManager {
                 }
 
                 /* is blocked by entity */
-                if (!world.checkNoEntityCollision(AxisAlignedBB(blockPos), null) && entityLandfill) {
-                    if (entityLandfill) {
-                        val playerEyePos = player.getPositionEyes(1f)
-                        val diffX = abs(blockPos.x + 0.5 - playerEyePos.x)
-                        val diffZ = abs(blockPos.z + 0.5 - playerEyePos.z)
-                        val isAtSide = (diffZ < 0.1 && diffX < maxReach) || (diffX < 0.1 && diffZ < maxReach)
-                        val isVeryClose = diffX < 0.1 || diffZ < 0.1
-                        if (isAtSide || isVeryClose) {
-                            if (tasks[blockPos]?.taskState != TaskState.LANDFILL) {
-                                val landfillTask = BlockTask(blockPos, TaskState.BREAK, blueprintTask.targetBlock)
-                                landfillTask.updateState(TaskState.LANDFILL)
-                                addTask(landfillTask, blueprintTask)
-                            }
-                            return
+                if (!world.checkNoEntityCollision(AxisAlignedBB(blockPos), player) && entityLandfill) {
+                    val playerEyePos = player.getPositionEyes(1f)
+                    val diffX = abs(blockPos.x + 0.5 - playerEyePos.x)
+                    val diffZ = abs(blockPos.z + 0.5 - playerEyePos.z)
+                    val isAtSide = (diffZ < 0.1 && diffX < maxReach) || (diffX < 0.1 && diffZ < maxReach)
+                    val isVeryClose = diffX < 0.1 || diffZ < 0.1
+                    if (isAtSide || isVeryClose) {
+                        if (tasks[blockPos]?.taskState != TaskState.LANDFILL) {
+                            val landfillTask = BlockTask(blockPos, TaskState.BREAK, blueprintTask.targetBlock)
+                            landfillTask.updateState(TaskState.LANDFILL)
+                            addTask(landfillTask, blueprintTask)
                         }
-                        val blockTask = BlockTask(blockPos, TaskState.DONE, currentState.block)
-                        addTask(blockTask, blueprintTask)
-                    }
-                    else {
                         return
                     }
                 }
@@ -184,9 +177,6 @@ object TaskManager {
                     blockTask.updateState(TaskState.IMPOSSIBLE_PLACE)
                     addTask(blockTask, blueprintTask)
                     stayTicks = 0
-                } else {
-                    blockTask.updateState(TaskState.IMPOSSIBLE_PLACE)
-                    addTask(blockTask, blueprintTask)
                 }
             }
 
@@ -293,7 +283,7 @@ object TaskManager {
                 || blockTask.taskState == TaskState.LIQUID
                 || (it.taskState != blockTask.taskState
                     && (it.taskState == TaskState.DONE
-                    || it.taskState == TaskState.IMPOSSIBLE_PLACE
+                    || it.taskState == TaskState.IMPOSSIBLE_PLACE || it.taskState == TaskState.LANDFILL
                     || (it.taskState == TaskState.PLACE
                     && !world.isPlaceable(it.blockPos)
         )))) {
@@ -321,7 +311,7 @@ object TaskManager {
             return false
         }
 
-        if (debugLevel != DebugLevel.OFF) {
+        if (debugLevel != IO.DebugLevel.OFF) {
             if (!anonymizeStats) {
                 MessageSendHelper.sendChatMessage("${module.chatName} Stuck while ${blockTask.taskState}@(${blockTask.blockPos.asString()}) for more than $timeout ticks (${blockTask.stuckTicks}), refreshing data.")
             } else {

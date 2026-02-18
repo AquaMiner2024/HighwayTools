@@ -18,6 +18,7 @@ import HighwayTools.pickupDelay
 import HighwayTools.restartInterval
 import com.lambda.client.event.SafeClientEvent
 import com.lambda.client.module.modules.player.InventoryManager
+import com.lambda.client.util.EntityUtils.flooredPosition
 import com.lambda.client.util.TickTimer
 import com.lambda.client.util.items.*
 import com.lambda.client.util.math.CoordinateConverter.asString
@@ -34,10 +35,15 @@ import net.minecraft.util.EnumHand
 import net.minecraft.util.SoundCategory
 import net.minecraft.util.math.AxisAlignedBB
 import net.minecraft.util.math.BlockPos
+import net.minecraft.util.math.Vec3d
 import trombone.*
 import trombone.IO.disableError
+import trombone.Pathfinder.goal
 import trombone.Pathfinder.moveState
+import trombone.Pathfinder.moveTo
 import trombone.Pathfinder.shouldBridge
+import trombone.Pathfinder.startingDirection
+import trombone.Pathfinder.stopMoveTo
 import trombone.Trombone.module
 import trombone.blueprint.BlueprintGenerator
 import trombone.handler.Container
@@ -505,6 +511,7 @@ object TaskExecutor {
         else if (moveState != Pathfinder.MovementState.RESTOCK
             && moveState != Pathfinder.MovementState.BRIDGE
             && moveState != Pathfinder.MovementState.ESCAPE
+            && startingDirection.isDiagonal
             && (world.totalWorldTime - lastStuckTick) > restartInterval
         ) {
             moveState = Pathfinder.MovementState.ESCAPE
@@ -513,17 +520,31 @@ object TaskExecutor {
     }
 
     private fun SafeClientEvent.doLandfill(blockTask: BlockTask, updateOnly: Boolean) {
+        goal = null
+        val isAboveAir = world.getBlockState(player.flooredPosition.down()).isReplaceable
+        if (isAboveAir) {
+            stopMoveTo()
+            //player.movementInput?.sneak = true
+            //connection.sendPacket(CPacketEntityAction(player, CPacketEntityAction.Action.START_SNEAKING))
+            if (debugLevel == IO.DebugLevel.VERBOSE) {
+                MessageSendHelper.sendChatMessage("${module.chatName} &b[Landfill] &rClose to fall, Stop Move")
+            }
+        }
         // onTick check is entity in here
-        if (world.checkNoEntityCollision(AxisAlignedBB(blockTask.blockPos), null)) {
+        if (world.checkNoEntityCollision(AxisAlignedBB(blockTask.blockPos), player)) {
             blockTask.updateState(TaskState.PLACE)
             if (debugLevel == IO.DebugLevel.VERBOSE) {
                 MessageSendHelper.sendChatMessage("${module.chatName} &b[Landfill] &rEntity Landfill done")
             }
             return
         }
+        // Get entities
+        val entities = world.getEntitiesWithinAABBExcludingEntity(player, AxisAlignedBB(blockTask.blockPos)).filterNotNull()
+        if (entities.isEmpty()) return
         // Entity still in here
         val targetBlocks = mutableSetOf<BlockPos>()
-        world.getEntitiesWithinAABBExcludingEntity(null,AxisAlignedBB(blockTask.blockPos)).filterNotNull().forEach { entity ->
+        val entityCenter = entities.first().positionVector
+        entities.forEach { entity ->
             val bb = entity.entityBoundingBox
             val y = floor(bb.minY).toInt() - 1
             val minX = floor(bb.minX).toInt()
@@ -534,7 +555,7 @@ object TaskExecutor {
                 for (z in minZ..maxZ) {
                     var floorPos = BlockPos(x, y, z)
                     var limit = 0
-                    while (world.isAirBlock(floorPos) && limit < 2) {
+                    while (world.isAirBlock(floorPos) && limit < 3) {
                         floorPos = floorPos.down()
                         limit++
                     }
@@ -543,23 +564,26 @@ object TaskExecutor {
             }
         }
         if (updateOnly) return
-        /*var landFillPos = blockTask.blockPos.down()
-        while (world.getBlockState(landFillPos).block == Blocks.AIR && blockTask.blockPos.y - landFillPos.y < 5) {
-            landFillPos = landFillPos.down()
-        }
-        if (landfillState.block == Blocks.AIR) return*/
         // Try break block
         targetBlocks.forEach { pos ->
             val state = world.getBlockState(pos)
+            //if (state.block == material) return
             val task = BlockTask(pos, TaskState.BREAK, state.block)
             task.updateTask(this)
-            if (task.eyeDistance < maxReach) {
+            val taskReach = player.getPositionEyes(1f).let { eye ->
+                world.getBlockState(pos).getSelectedBoundingBox(world, pos).let { bb ->
+                    eye.distanceTo(Vec3d(eye.x.coerceIn(bb.minX, bb.maxX), eye.y.coerceIn(bb.minY, bb.maxY), eye.z.coerceIn(bb.minZ, bb.maxZ)))
+                }
+            }
+            if (taskReach < maxReach) {
                 if (swapOrMoveBestTool(task) && Inventory.packetLimiter.size < interactionLimit) {
                     mineBlock(task)
                     if (debugLevel == IO.DebugLevel.VERBOSE) {
                         MessageSendHelper.sendChatMessage("${module.chatName} &b[Landfill] &rEntity detected, digging @(${pos.asString()})")
                     }
                 }
+            } else {
+                if (!isAboveAir) moveTo(Vec3d(entityCenter.x, player.posY, entityCenter.z))
             }
         }
     }

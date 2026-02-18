@@ -144,30 +144,16 @@ object Pathfinder {
                     return
                 }
                 if (escapeTarget1 == null && escapeTarget2 == null) {
-                    if (startingDirection.isDiagonal) {
-                        escapeTarget1 = Vec3d(
-                            player.posX + (-dx - dz) * rangeMultiplier,
-                            player.posY,
-                            player.posZ + (-dz + dx) * rangeMultiplier
-                        )
-                        escapeTarget2 = Vec3d(
-                            player.posX + (-dx + dz) * rangeMultiplier,
-                            player.posY,
-                            player.posZ + (-dz - dx) * rangeMultiplier
-                        )
-                    }
-                    else {
-                        escapeTarget1 = Vec3d(
-                            player.posX + (dx * 0.5) + dz * rangeMultiplier,
-                            player.posY,
-                            player.posZ + (dz * 0.5) + -dx * rangeMultiplier
-                        )
-                        escapeTarget2 = Vec3d(
-                            player.posX + (dx * 0.5) - dz * rangeMultiplier,
-                            player.posY,
-                            player.posZ + (dz * 0.5) - -dx * rangeMultiplier
-                        )
-                    }
+                    escapeTarget1 = Vec3d(
+                        player.posX + (-dx - dz) * rangeMultiplier,
+                        player.posY,
+                        player.posZ + (-dz + dx) * rangeMultiplier
+                    )
+                    escapeTarget2 = Vec3d(
+                        player.posX + (-dx + dz) * rangeMultiplier,
+                        player.posY,
+                        player.posZ + (-dz - dx) * rangeMultiplier
+                    )
                 }
                 val t1 = escapeTarget1!!
                 val t2 = escapeTarget2!!
@@ -226,12 +212,12 @@ object Pathfinder {
         return false
     }
 
-    private fun SafeClientEvent.moveTo(target: Vec3d) {
+    fun SafeClientEvent.moveTo(target: Vec3d) {
         player.motionX = (target.x - player.posX).coerceIn((-moveSpeed).toDouble(), moveSpeed.toDouble())
         player.motionZ = (target.z - player.posZ).coerceIn((-moveSpeed).toDouble(), moveSpeed.toDouble())
     }
 
-    private fun SafeClientEvent.stopMoveTo() {
+    fun SafeClientEvent.stopMoveTo() {
         player.motionX = 0.0
         player.motionZ = 0.0
     }
