@@ -22,6 +22,7 @@ import com.lambda.client.util.EntityUtils.flooredPosition
 import com.lambda.client.util.TickTimer
 import com.lambda.client.util.items.*
 import com.lambda.client.util.math.CoordinateConverter.asString
+import com.lambda.client.util.math.VectorUtils.distanceTo
 import com.lambda.client.util.math.VectorUtils.toVec3dCenter
 import com.lambda.client.util.text.MessageSendHelper
 import com.lambda.client.util.world.*
@@ -231,6 +232,10 @@ object TaskExecutor {
                 throwAllInSlot(module, it)
             }
         } else {
+            val targetPos = getCollectingPosition()
+            if (targetPos != null && (goal == null || goal!!.distanceTo(targetPos) > 0.5)) {
+                goal = targetPos
+            }
             containerTask.onStuck()
         }
     }

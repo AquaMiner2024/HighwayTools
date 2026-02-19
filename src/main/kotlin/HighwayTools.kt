@@ -107,7 +107,7 @@ object HighwayTools : PluginModule(
 
     // storage management
     val storageManagement by setting("Manage Storage", true, { page == Page.STORAGE_MANAGEMENT }, description = "Choose to interact with container using only packets")
-    val pickupDelay by setting("Pickup Delay", 4, 0..20, 1, { page == Page.STORAGE_MANAGEMENT && storageManagement }, description = "Delay ticks when pickup item from shulkerbox")
+    val pickupDelay by setting("Pickup Delay", 35, 0..100, 1, { page == Page.STORAGE_MANAGEMENT && storageManagement }, description = "Delay ticks when pickup item from shulkerbox")
     val searchEChest by setting("Search Ender Chest", false, { page == Page.STORAGE_MANAGEMENT && storageManagement }, description = "Allow access to your ender chest")
     val leaveEmptyShulkers by setting("Leave Empty Shulkers", true, { page == Page.STORAGE_MANAGEMENT && storageManagement }, description = "Does not break empty shulkers")
     val grindObsidian by setting("Grind Obsidian", true, { page == Page.STORAGE_MANAGEMENT && storageManagement }, description = "Destroy Ender Chests to obtain Obsidian")
