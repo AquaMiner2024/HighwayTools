@@ -19,6 +19,7 @@ import HighwayTools.restartInterval
 import com.lambda.client.event.SafeClientEvent
 import com.lambda.client.module.modules.player.InventoryManager
 import com.lambda.client.util.EntityUtils.flooredPosition
+import com.lambda.client.util.EntityUtils.getDroppedItems
 import com.lambda.client.util.TickTimer
 import com.lambda.client.util.items.*
 import com.lambda.client.util.math.CoordinateConverter.asString
@@ -50,6 +51,7 @@ import trombone.blueprint.BlueprintGenerator
 import trombone.handler.Container
 import trombone.handler.Container.containerTask
 import trombone.handler.Container.getCollectingPosition
+import trombone.handler.Container.lastRestockTime
 import trombone.handler.Inventory
 import trombone.handler.Inventory.getEjectSlot
 import trombone.handler.Inventory.moveToInventory
@@ -222,6 +224,7 @@ object TaskExecutor {
 
     private fun SafeClientEvent.doPickup() {
         if (getCollectingPosition() == null) {
+            goal = null
             containerTask.updateState(TaskState.DONE)
             moveState = Pathfinder.MovementState.RUNNING
             return
@@ -233,7 +236,7 @@ object TaskExecutor {
             }
         } else {
             val targetPos = getCollectingPosition()
-            if (targetPos != null && (goal == null || goal!!.distanceTo(targetPos) > 0.5)) {
+            if (targetPos != null && goal == null) {
                 goal = targetPos
             }
             containerTask.onStuck()
@@ -241,6 +244,7 @@ object TaskExecutor {
     }
 
     private fun SafeClientEvent.doOpenContainer() {
+        val cooldownMs = 5000L
         moveState = Pathfinder.MovementState.RESTOCK
 
         if (containerTask.isOpen) {
@@ -249,6 +253,14 @@ object TaskExecutor {
         }
 
         if (Container.shulkerOpenTimer.tick(20)) {
+            val timePassed = System.currentTimeMillis() - lastRestockTime
+            if (timePassed < cooldownMs) {
+                if (debugLevel == IO.DebugLevel.VERBOSE) {
+                    MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] [TaskExecutor] &rWait For Open Shulker: ${((cooldownMs - timePassed) / 1000.0)}")
+                }
+                return
+            }
+
             val center = containerTask.blockPos.toVec3dCenter()
             val diff = player.getPositionEyes(1f).subtract(center)
             val normalizedVec = diff.normalize()
@@ -259,6 +271,7 @@ object TaskExecutor {
             Inventory.lastHitVec = getHitVec(containerTask.blockPos, side)
 
             connection.sendPacket(CPacketPlayerTryUseItemOnBlock(containerTask.blockPos, side, EnumHand.MAIN_HAND, hitVecOffset.x.toFloat(), hitVecOffset.y.toFloat(), hitVecOffset.z.toFloat()))
+            lastRestockTime = System.currentTimeMillis()
             player.swingArm(EnumHand.MAIN_HAND)
         }
     }

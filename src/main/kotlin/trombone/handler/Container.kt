@@ -1,5 +1,6 @@
 package trombone.handler
 
+import HighwayTools.debugLevel
 import HighwayTools.grindObsidian
 import HighwayTools.keepFreeSlots
 import HighwayTools.material
@@ -21,6 +22,7 @@ import com.lambda.client.util.TimeUnit
 import com.lambda.client.util.items.*
 import com.lambda.client.util.math.VectorUtils
 import com.lambda.client.util.math.VectorUtils.toVec3dCenter
+import com.lambda.client.util.text.MessageSendHelper
 import com.lambda.client.util.world.getVisibleSides
 import com.lambda.client.util.world.isPlaceable
 import com.lambda.client.util.world.isReplaceable
@@ -35,10 +37,13 @@ import net.minecraft.util.EnumFacing
 import net.minecraft.util.NonNullList
 import net.minecraft.util.math.AxisAlignedBB
 import net.minecraft.util.math.BlockPos
+import net.minecraft.util.math.Vec3d
 import net.minecraft.util.text.TextFormatting
+import trombone.IO
 import trombone.blueprint.BlueprintGenerator.isInsideBlueprintBuild
 import trombone.IO.disableError
 import trombone.Pathfinder.currentBlockPos
+import trombone.Trombone.module
 import trombone.handler.Inventory.zipInventory
 import trombone.task.BlockTask
 import trombone.task.TaskState
@@ -48,15 +53,32 @@ object Container {
     var containerTask = BlockTask(BlockPos.ORIGIN, TaskState.DONE, Blocks.AIR)
     val shulkerOpenTimer = TickTimer(TimeUnit.TICKS)
     var grindCycles = 0
+    var lastRestockTime = 0L
 
     fun SafeClientEvent.handleRestock(item: Item) {
+        val cooldownMs = 5000L
+        if (lastRestockTime == 0L) {
+            lastRestockTime = System.currentTimeMillis()
+            if (debugLevel == IO.DebugLevel.VERBOSE) {
+                MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] [Container] &rStarting first Restock cooldown")
+            }
+            return
+        }
         if (preferEnderChests && item.block == Blocks.OBSIDIAN) {
             handleEnderChest(item)
         } else {
+            val timePassed = System.currentTimeMillis() - lastRestockTime
+            if (timePassed < cooldownMs) {
+                if (debugLevel == IO.DebugLevel.VERBOSE) {
+                    MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] [Container] &rWait For Place Shulker: ${((cooldownMs - timePassed) / 1000.0)}")
+                }
+                return
+            }
             // Case 1: item is in a shulker in the inventory
             getShulkerWith(player.inventorySlots, item)?.let { slot ->
                 getRemotePos()?.let { pos ->
                     containerTask = BlockTask(pos, TaskState.PLACE, slot.stack.item.block, item = item)
+                    lastRestockTime = System.currentTimeMillis()
                 } ?: run {
                     disableError("Can't find possible container position (Case: 1)")
                 }
@@ -141,8 +163,10 @@ object Container {
         return VectorUtils.getBlockPosInSphere(origin, maxReach).asSequence()
             .filter { pos ->
                 !isInsideBlueprintBuild(pos)
+                        && Vec3d.fromPitchYaw(0f, player.rotationYaw).dotProduct(pos.toVec3dCenter().subtract(player.positionVector).normalize()) < 0
                     && pos != currentBlockPos
                     && world.isPlaceable(pos)
+                        && world.checkNoEntityCollision(AxisAlignedBB(pos))
                     && !world.getBlockState(pos.down()).isReplaceable
                     && world.isAirBlock(pos.up())
                     && getVisibleSides(pos.down()).contains(EnumFacing.UP)

@@ -1,6 +1,8 @@
 package trombone
 
+import HighwayTools.debugLevel
 import HighwayTools.moveSpeed
+import HighwayTools.pickupDelay
 import HighwayTools.scaffold
 import HighwayTools.rangeMultiplier
 import HighwayTools.waitTicks
@@ -13,6 +15,7 @@ import com.lambda.client.util.math.Direction
 import com.lambda.client.util.math.VectorUtils.distanceTo
 import com.lambda.client.util.math.VectorUtils.multiply
 import com.lambda.client.util.math.VectorUtils.toVec3dCenter
+import com.lambda.client.util.text.MessageSendHelper
 import com.lambda.client.util.world.isReplaceable
 import net.minecraft.block.BlockLiquid
 import net.minecraft.init.Blocks
@@ -21,6 +24,7 @@ import net.minecraft.util.math.Vec3d
 import trombone.IO.disableError
 import trombone.Statistics.simpleMovingAverageDistance
 import trombone.Trombone.active
+import trombone.Trombone.module
 import trombone.handler.Container.containerTask
 import trombone.handler.Container.getCollectingPosition
 import trombone.handler.Inventory.lastHitVec
@@ -120,7 +124,17 @@ object Pathfinder {
                 }
             }
             MovementState.PICKUP -> {
-                goal = getCollectingPosition()
+                val currentTick = mc.player.ticksExisted.toLong()
+                if (currentTick - containerTask.lastActionTick < pickupDelay) {
+                    if (debugLevel == IO.DebugLevel.VERBOSE) {
+                        MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] [Pathfinder] &rWait For Pickup Shulker: ${currentTick - containerTask.lastActionTick}")
+                    }
+                    return
+                }
+                if (currentTick - containerTask.lastActionTick > pickupDelay) {
+                    containerTask.lastActionTick = currentTick
+                    goal = getCollectingPosition()
+                }
             }
             MovementState.RESTOCK -> {
                 val target = currentBlockPos.toVec3dCenter()
