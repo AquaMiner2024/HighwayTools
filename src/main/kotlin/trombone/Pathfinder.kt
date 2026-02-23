@@ -124,17 +124,7 @@ object Pathfinder {
                 }
             }
             MovementState.PICKUP -> {
-                val currentTick = mc.player.ticksExisted.toLong()
-                if (currentTick - containerTask.lastActionTick < pickupDelay) {
-                    if (debugLevel == IO.DebugLevel.VERBOSE) {
-                        MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] [Pathfinder] &rWait For Pickup Shulker: ${currentTick - containerTask.lastActionTick}")
-                    }
-                    return
-                }
-                if (currentTick - containerTask.lastActionTick > pickupDelay) {
-                    containerTask.lastActionTick = currentTick
-                    goal = getCollectingPosition()
-                }
+                goal = getCollectingPosition()
             }
             MovementState.RESTOCK -> {
                 val target = currentBlockPos.toVec3dCenter()

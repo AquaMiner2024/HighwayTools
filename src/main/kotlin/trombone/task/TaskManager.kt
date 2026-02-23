@@ -146,12 +146,10 @@ object TaskManager {
 
                 /* is blocked by entity */
                 if (!world.checkNoEntityCollision(AxisAlignedBB(blockPos), player) && entityLandfill) {
-                    val playerEyePos = player.getPositionEyes(1f)
-                    val diffX = abs(blockPos.x + 0.5 - playerEyePos.x)
-                    val diffZ = abs(blockPos.z + 0.5 - playerEyePos.z)
-                    val isAtSide = (diffZ < 0.1 && diffX < maxReach) || (diffX < 0.1 && diffZ < maxReach)
-                    val isVeryClose = diffX < 0.1 || diffZ < 0.1
-                    if (isAtSide || isVeryClose) {
+                    val toPos = blockPos.toVec3dCenter().subtract(player.positionVector).normalize()
+                    val dirVec = Vec3d(startingDirection.directionVec).normalize()
+                    val cosAngle = toPos.dotProduct(dirVec)
+                    if (cosAngle < 0.5) {
                         if (tasks[blockPos]?.taskState != TaskState.LANDFILL) {
                             val landfillTask = BlockTask(blockPos, TaskState.BREAK, blueprintTask.targetBlock)
                             landfillTask.updateState(TaskState.LANDFILL)

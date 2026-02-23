@@ -114,12 +114,7 @@ object TaskExecutor {
     private fun SafeClientEvent.doRestock() {
         val container = player.openContainer
         val currentTick = mc.player.ticksExisted.toLong()
-        /*if (!containerTask.isLoaded) {
-            if (debugLevel == IO.DebugLevel.VERBOSE) {
-                MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] &rShulker box didn't loaded")
-            }
-            return
-        }*/
+
         if (currentTick - containerTask.lastActionTick < pickupDelay) {
             if (debugLevel == IO.DebugLevel.VERBOSE) {
                 MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] &rWait For Pickup Delay")
@@ -244,7 +239,6 @@ object TaskExecutor {
     }
 
     private fun SafeClientEvent.doOpenContainer() {
-        val cooldownMs = 5000L
         moveState = Pathfinder.MovementState.RESTOCK
 
         if (containerTask.isOpen) {
@@ -253,14 +247,6 @@ object TaskExecutor {
         }
 
         if (Container.shulkerOpenTimer.tick(20)) {
-            val timePassed = System.currentTimeMillis() - lastRestockTime
-            if (timePassed < cooldownMs) {
-                if (debugLevel == IO.DebugLevel.VERBOSE) {
-                    MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] [TaskExecutor] &rWait For Open Shulker: ${((cooldownMs - timePassed) / 1000.0)}")
-                }
-                return
-            }
-
             val center = containerTask.blockPos.toVec3dCenter()
             val diff = player.getPositionEyes(1f).subtract(center)
             val normalizedVec = diff.normalize()

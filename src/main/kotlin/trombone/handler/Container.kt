@@ -43,6 +43,7 @@ import trombone.IO
 import trombone.blueprint.BlueprintGenerator.isInsideBlueprintBuild
 import trombone.IO.disableError
 import trombone.Pathfinder.currentBlockPos
+import trombone.Pathfinder.startingDirection
 import trombone.Trombone.module
 import trombone.handler.Inventory.zipInventory
 import trombone.task.BlockTask
@@ -56,24 +57,9 @@ object Container {
     var lastRestockTime = 0L
 
     fun SafeClientEvent.handleRestock(item: Item) {
-        val cooldownMs = 5000L
-        if (lastRestockTime == 0L) {
-            lastRestockTime = System.currentTimeMillis()
-            if (debugLevel == IO.DebugLevel.VERBOSE) {
-                MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] [Container] &rStarting first Restock cooldown")
-            }
-            return
-        }
         if (preferEnderChests && item.block == Blocks.OBSIDIAN) {
             handleEnderChest(item)
         } else {
-            val timePassed = System.currentTimeMillis() - lastRestockTime
-            if (timePassed < cooldownMs) {
-                if (debugLevel == IO.DebugLevel.VERBOSE) {
-                    MessageSendHelper.sendChatMessage("${module.chatName} &b[Waiting] [Container] &rWait For Place Shulker: ${((cooldownMs - timePassed) / 1000.0)}")
-                }
-                return
-            }
             // Case 1: item is in a shulker in the inventory
             getShulkerWith(player.inventorySlots, item)?.let { slot ->
                 getRemotePos()?.let { pos ->
@@ -159,19 +145,22 @@ object Container {
 
     private fun SafeClientEvent.getRemotePos(): BlockPos? {
         val origin = currentBlockPos.up().toVec3dCenter()
+        val dirVec = startingDirection.directionVec
 
         return VectorUtils.getBlockPosInSphere(origin, maxReach).asSequence()
             .filter { pos ->
+                val toPos = pos.toVec3dCenter().subtract(player.positionVector)
+                val isBehind = (toPos.x * dirVec.x + toPos.y * dirVec.y + toPos.z * dirVec.z) < 0
                 !isInsideBlueprintBuild(pos)
-                        && Vec3d.fromPitchYaw(0f, player.rotationYaw).dotProduct(pos.toVec3dCenter().subtract(player.positionVector).normalize()) < 0
-                    && pos != currentBlockPos
-                    && world.isPlaceable(pos)
+                        && isBehind
+                        && pos != currentBlockPos
+                        && world.isPlaceable(pos)
                         && world.checkNoEntityCollision(AxisAlignedBB(pos))
-                    && !world.getBlockState(pos.down()).isReplaceable
-                    && world.isAirBlock(pos.up())
-                    && getVisibleSides(pos.down()).contains(EnumFacing.UP)
-                    && player.positionVector.distanceTo(pos.toVec3dCenter()) > minDistance
-                    && pos.y >= currentBlockPos.y
+                        && !world.getBlockState(pos.down()).isReplaceable
+                        && world.isAirBlock(pos.up())
+                        && getVisibleSides(pos.down()).contains(EnumFacing.UP)
+                        && player.positionVector.distanceTo(pos.toVec3dCenter()) > minDistance
+                        && pos.y >= currentBlockPos.y
             }.sortedWith(
                 compareByDescending<BlockPos> {
                     secureScore(it)
