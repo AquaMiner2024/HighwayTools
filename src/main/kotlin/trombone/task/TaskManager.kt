@@ -57,7 +57,6 @@ import trombone.interaction.Place.extraPlaceDelay
 import trombone.task.TaskExecutor.doTask
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentSkipListSet
-import kotlin.math.abs
 
 object TaskManager {
     val tasks = ConcurrentHashMap<BlockPos, BlockTask>()

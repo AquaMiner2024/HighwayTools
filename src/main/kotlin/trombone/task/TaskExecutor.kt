@@ -19,11 +19,9 @@ import HighwayTools.restartInterval
 import com.lambda.client.event.SafeClientEvent
 import com.lambda.client.module.modules.player.InventoryManager
 import com.lambda.client.util.EntityUtils.flooredPosition
-import com.lambda.client.util.EntityUtils.getDroppedItems
 import com.lambda.client.util.TickTimer
 import com.lambda.client.util.items.*
 import com.lambda.client.util.math.CoordinateConverter.asString
-import com.lambda.client.util.math.VectorUtils.distanceTo
 import com.lambda.client.util.math.VectorUtils.toVec3dCenter
 import com.lambda.client.util.text.MessageSendHelper
 import com.lambda.client.util.world.*
@@ -114,6 +112,7 @@ object TaskExecutor {
     private fun SafeClientEvent.doRestock() {
         val container = player.openContainer
         val currentTick = mc.player.ticksExisted.toLong()
+        val currentTime = System.currentTimeMillis()
 
         if (currentTick - containerTask.lastActionTick < pickupDelay) {
             if (debugLevel == IO.DebugLevel.VERBOSE) {
@@ -147,6 +146,12 @@ object TaskExecutor {
                     || InventoryManager.ejectList.contains(it.stack.item.registryName.toString())
             }
         ) {
+            if (currentTime - lastRestockTime < 5000L) {
+                if (debugLevel == IO.DebugLevel.VERBOSE) {
+                    MessageSendHelper.sendChatMessage("${module.chatName} [Wait] Wait for time to leave shulker, ${currentTime - lastRestockTime}")
+                }
+                return
+            }
             if (debugLevel != IO.DebugLevel.OFF) {
                 if (!anonymizeStats) {
                     MessageSendHelper.sendChatMessage("${module.chatName} Left empty ${containerTask.targetBlock.localizedName}@(${containerTask.blockPos.asString()})")
