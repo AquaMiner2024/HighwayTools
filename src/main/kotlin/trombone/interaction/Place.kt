@@ -6,6 +6,7 @@ import HighwayTools.placeDelay
 import HighwayTools.taskTimeout
 import com.lambda.client.LambdaMod
 import com.lambda.client.event.SafeClientEvent
+import com.lambda.client.util.items.block
 import com.lambda.client.util.items.blockBlacklist
 import com.lambda.client.util.math.CoordinateConverter.asString
 import com.lambda.client.util.text.MessageSendHelper
@@ -89,7 +90,9 @@ object Place {
                 }
             }
 
-            delay(50L * taskTimeout)
+            val isShulker = blockTask.item.block is net.minecraft.block.BlockShulkerBox
+            val finalTimeout = if (isShulker) 5000L else (50L * taskTimeout)
+            delay(finalTimeout)
             if (blockTask.taskState == TaskState.PENDING_PLACE) {
                 blockTask.updateState(TaskState.PLACE)
                 if (dynamicDelay && extraPlaceDelay < 10) extraPlaceDelay += 1

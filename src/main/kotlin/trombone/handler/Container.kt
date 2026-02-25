@@ -1,6 +1,5 @@
 package trombone.handler
 
-import HighwayTools.debugLevel
 import HighwayTools.grindObsidian
 import HighwayTools.keepFreeSlots
 import HighwayTools.material
@@ -22,7 +21,6 @@ import com.lambda.client.util.TimeUnit
 import com.lambda.client.util.items.*
 import com.lambda.client.util.math.VectorUtils
 import com.lambda.client.util.math.VectorUtils.toVec3dCenter
-import com.lambda.client.util.text.MessageSendHelper
 import com.lambda.client.util.world.getVisibleSides
 import com.lambda.client.util.world.isPlaceable
 import com.lambda.client.util.world.isReplaceable
@@ -39,12 +37,10 @@ import net.minecraft.util.math.AxisAlignedBB
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Vec3d
 import net.minecraft.util.text.TextFormatting
-import trombone.IO
 import trombone.blueprint.BlueprintGenerator.isInsideBlueprintBuild
 import trombone.IO.disableError
 import trombone.Pathfinder.currentBlockPos
 import trombone.Pathfinder.startingDirection
-import trombone.Trombone.module
 import trombone.handler.Inventory.zipInventory
 import trombone.task.BlockTask
 import trombone.task.TaskState
@@ -145,14 +141,15 @@ object Container {
 
     private fun SafeClientEvent.getRemotePos(): BlockPos? {
         val origin = currentBlockPos.up().toVec3dCenter()
-        val dirVec = startingDirection.directionVec
+        val dirVec = Vec3d(startingDirection.directionVec).normalize()
 
         return VectorUtils.getBlockPosInSphere(origin, maxReach).asSequence()
             .filter { pos ->
                 val toPos = pos.toVec3dCenter().subtract(player.positionVector)
-                val isBehind = (toPos.x * dirVec.x + toPos.y * dirVec.y + toPos.z * dirVec.z) < 0
+                val isBehind = toPos.dotProduct(dirVec) < 0
+                val distanceToAxis = kotlin.math.sqrt((toPos.lengthSquared() - toPos.dotProduct(dirVec) * toPos.dotProduct(dirVec)).coerceAtLeast(0.0))
                 !isInsideBlueprintBuild(pos)
-                        && isBehind
+                        && isBehind && distanceToAxis < 0.8
                         && pos != currentBlockPos
                         && world.isPlaceable(pos)
                         && world.checkNoEntityCollision(AxisAlignedBB(pos))
