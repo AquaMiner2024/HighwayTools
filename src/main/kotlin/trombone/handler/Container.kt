@@ -53,9 +53,14 @@ object Container {
     var lastRestockTime = 0L
 
     fun SafeClientEvent.handleRestock(item: Item) {
+        if (lastRestockTime == 0L) {
+            lastRestockTime = System.currentTimeMillis()
+            return
+        }
         if (preferEnderChests && item.block == Blocks.OBSIDIAN) {
             handleEnderChest(item)
         } else {
+            if (System.currentTimeMillis() - lastRestockTime < 5000L) return
             // Case 1: item is in a shulker in the inventory
             getShulkerWith(player.inventorySlots, item)?.let { slot ->
                 getRemotePos()?.let { pos ->
@@ -101,7 +106,7 @@ object Container {
                     if (cycles > 0) {
                         grindCycles = cycles
                     } else {
-                        zipInventory()
+                        zipInventory(player.openContainer)
                     }
                 }
             }
@@ -148,8 +153,9 @@ object Container {
                 val toPos = pos.toVec3dCenter().subtract(player.positionVector)
                 val isBehind = toPos.dotProduct(dirVec) < 0
                 val distanceToAxis = kotlin.math.sqrt((toPos.lengthSquared() - toPos.dotProduct(dirVec) * toPos.dotProduct(dirVec)).coerceAtLeast(0.0))
+                val threshold = if (startingDirection.isDiagonal) 1.6 else 0.8
                 !isInsideBlueprintBuild(pos)
-                        && isBehind && distanceToAxis < 0.8
+                        && isBehind && distanceToAxis < threshold
                         && pos != currentBlockPos
                         && world.isPlaceable(pos)
                         && world.checkNoEntityCollision(AxisAlignedBB(pos))

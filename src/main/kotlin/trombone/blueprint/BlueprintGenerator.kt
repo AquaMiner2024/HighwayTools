@@ -19,7 +19,6 @@ import HighwayTools.width
 import com.lambda.client.commons.extension.ceilToInt
 import com.lambda.client.commons.extension.floorToInt
 import com.lambda.client.util.math.Direction
-import com.lambda.client.util.math.VectorUtils.distanceTo
 import com.lambda.client.util.math.VectorUtils.multiply
 import com.lambda.client.util.math.VectorUtils.toVec3dCenter
 import net.minecraft.init.Blocks
@@ -44,7 +43,7 @@ object BlueprintGenerator {
         val zDirection = startingDirection
         val xDirection = zDirection.clockwise(if (zDirection.isDiagonal) 1 else 2)
 
-        for (x in -maxReach.floorToInt() * 5..maxReach.ceilToInt() * 5) {
+        for (x in -maxReach.floorToInt() * 2..maxReach.ceilToInt() * 5) {
             val thisPos = basePos.add(zDirection.directionVec.multiply(x))
             if (clearSpace) generateClear(thisPos, xDirection)
             if (mode == Structure.TUNNEL) {

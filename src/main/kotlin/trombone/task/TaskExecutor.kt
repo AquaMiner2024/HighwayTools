@@ -8,6 +8,7 @@ import HighwayTools.fakeSounds
 import HighwayTools.fastFill
 import HighwayTools.fillerMat
 import HighwayTools.ignoreBlocks
+import HighwayTools.illegalPlacements
 import HighwayTools.interactionLimit
 import HighwayTools.keepFreeSlots
 import HighwayTools.leaveEmptyShulkers
@@ -15,6 +16,7 @@ import HighwayTools.material
 import HighwayTools.maxReach
 import HighwayTools.mode
 import HighwayTools.pickupDelay
+import HighwayTools.placementSearch
 import HighwayTools.restartInterval
 import com.lambda.client.event.SafeClientEvent
 import com.lambda.client.module.modules.player.InventoryManager
@@ -22,6 +24,7 @@ import com.lambda.client.util.EntityUtils.flooredPosition
 import com.lambda.client.util.TickTimer
 import com.lambda.client.util.items.*
 import com.lambda.client.util.math.CoordinateConverter.asString
+import com.lambda.client.util.math.VectorUtils.distanceTo
 import com.lambda.client.util.math.VectorUtils.toVec3dCenter
 import com.lambda.client.util.text.MessageSendHelper
 import com.lambda.client.util.world.*
@@ -533,8 +536,6 @@ object TaskExecutor {
         val isAboveAir = world.getBlockState(player.flooredPosition.down()).isReplaceable
         if (isAboveAir) {
             stopMoveTo()
-            //player.movementInput?.sneak = true
-            //connection.sendPacket(CPacketEntityAction(player, CPacketEntityAction.Action.START_SNEAKING))
             if (debugLevel == IO.DebugLevel.VERBOSE) {
                 MessageSendHelper.sendChatMessage("${module.chatName} &b[Landfill] &rClose to fall, Stop Move")
             }
@@ -576,7 +577,28 @@ object TaskExecutor {
         // Try break block
         targetBlocks.forEach { pos ->
             val state = world.getBlockState(pos)
-            //if (state.block == material) return
+            if (state.block is BlockLiquid) {
+                val centerTask = BlockTask(pos, TaskState.PLACE, fillerMat)
+                if (swapOrMoveBlock(centerTask)) {
+                    placeBlock(centerTask)
+                }
+                for (side in EnumFacing.values()) {
+                    if (side == EnumFacing.DOWN) continue
+                    val neighbourPos = pos.offset(side)
+
+                    if (world.getBlockState(neighbourPos).block !is BlockLiquid) continue
+
+                    if (player.distanceTo(neighbourPos) <= maxReach
+                        && getNeighbourSequence(neighbourPos, placementSearch, maxReach, !illegalPlacements).isNotEmpty()
+                    ) {
+                        val sideTask = BlockTask(neighbourPos, TaskState.PLACE, fillerMat)
+                        if (swapOrMoveBlock(sideTask)) {
+                            placeBlock(sideTask)
+                        }
+                    }
+                }
+                return@forEach
+            }
             val task = BlockTask(pos, TaskState.BREAK, state.block)
             task.updateTask(this)
             val taskReach = player.getPositionEyes(1f).let { eye ->

@@ -91,7 +91,7 @@ object Place {
             }
 
             val isShulker = blockTask.item.block is net.minecraft.block.BlockShulkerBox
-            val finalTimeout = if (isShulker) 5000L else (50L * taskTimeout)
+            val finalTimeout = if (isShulker) 50000L else (50L * taskTimeout)
             delay(finalTimeout)
             if (blockTask.taskState == TaskState.PENDING_PLACE) {
                 blockTask.updateState(TaskState.PLACE)

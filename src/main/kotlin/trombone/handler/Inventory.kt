@@ -7,8 +7,6 @@ import HighwayTools.saveMaterial
 import HighwayTools.saveTools
 import HighwayTools.storageManagement
 import com.lambda.client.event.SafeClientEvent
-import com.lambda.client.manager.managers.PlayerInventoryManager
-import com.lambda.client.manager.managers.PlayerInventoryManager.addInventoryTask
 import com.lambda.client.manager.managers.PlayerPacketManager.sendPlayerPacket
 import com.lambda.client.module.modules.player.InventoryManager
 import com.lambda.client.util.items.*
@@ -156,7 +154,7 @@ object Inventory {
         return swapOrMoveTool(blockTask)
     }
 
-    fun SafeClientEvent.zipInventory() {
+    fun SafeClientEvent.zipInventory(container: Container) {
         val compressibleStacks = player.inventorySlots.filter { comp ->
             comp.stack.count < comp.stack.maxStackSize
                 && player.inventorySlots.countByStack { comp.stack.item == it.item } > 1
@@ -168,9 +166,10 @@ object Inventory {
         }
 
         compressibleStacks.forEach { slot ->
-            module.addInventoryTask(
+            clickSlot(module, container.windowId, slot.slotNumber, 0, ClickType.QUICK_MOVE)
+            /*module.addInventoryTask(
                 PlayerInventoryManager.ClickInfo(slot = slot.slotNumber, type = ClickType.QUICK_MOVE)
-            )
+            )*/
         }
     }
 
@@ -207,10 +206,12 @@ object Inventory {
                     InventoryManager.ejectList.contains(it.stack.item.registryName.toString())
                         || it.stack.isEmpty
                 }?.let { freeSlot ->
-                        clickSlot(module, container.windowId, 0, freeSlot.slotNumber, ClickType.SWAP)
                         clickSlot(module, container.windowId, freeSlot.slotNumber, 0, ClickType.SWAP)
+                        clickSlot(module, container.windowId, originSlot.slotNumber, 0, ClickType.SWAP)
+                        //clickSlot(module, container.windowId, 0, freeSlot.slotNumber, ClickType.SWAP)
+                        //clickSlot(module, container.windowId, freeSlot.slotNumber, 0, ClickType.SWAP)
                 } ?: run {
-                    zipInventory()
+                    zipInventory(container)
                 }
             }
         }
