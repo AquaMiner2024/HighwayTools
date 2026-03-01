@@ -43,7 +43,7 @@ object BlueprintGenerator {
         val zDirection = startingDirection
         val xDirection = zDirection.clockwise(if (zDirection.isDiagonal) 1 else 2)
 
-        for (x in -maxReach.floorToInt() * 2..maxReach.ceilToInt() * 5) {
+        for (x in -maxReach.floorToInt() * 5..maxReach.ceilToInt() * 5) {
             val thisPos = basePos.add(zDirection.directionVec.multiply(x))
             if (clearSpace) generateClear(thisPos, xDirection)
             if (mode == Structure.TUNNEL) {

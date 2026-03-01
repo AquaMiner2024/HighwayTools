@@ -493,7 +493,6 @@ object TaskExecutor {
                     MessageSendHelper.sendChatMessage("${module.chatName} Invalid place position. Removing task")
                 }
             }
-
             if (blockTask == containerTask) {
                 MessageSendHelper.sendChatMessage("${module.chatName} Failed container task. Trying to break block.")
                 containerTask.updateState(TaskState.BREAK)
@@ -504,12 +503,11 @@ object TaskExecutor {
             return
         }
 
-        if (!swapOrMoveBlock(blockTask)) {
+        if (swapOrMoveBlock(blockTask)) {
+            placeBlock(blockTask)
+        } else {
             blockTask.onStuck()
-            return
         }
-
-        placeBlock(blockTask)
     }
 
     private fun SafeClientEvent.doImpossiblePlace() {
@@ -597,7 +595,7 @@ object TaskExecutor {
                         }
                     }
                 }
-                return@forEach
+                return
             }
             val task = BlockTask(pos, TaskState.BREAK, state.block)
             task.updateTask(this)

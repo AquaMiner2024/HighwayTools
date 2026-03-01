@@ -78,7 +78,7 @@ object Inventory {
                 slot.toHotbarSlotOrNull()?.let {
                     swapToSlot(it)
                 } ?: run {
-                    val slotTo = player.hotbarSlots.firstEmpty()?.hotbarSlot ?: 0
+                    val slotTo = player.hotbarSlots.filter { it.hotbarSlot != 0 }.firstEmpty()?.hotbarSlot ?: 1
                     moveToHotbar(module, slot.slotNumber, slotTo)
                 }
             }

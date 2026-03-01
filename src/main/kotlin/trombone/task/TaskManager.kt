@@ -76,8 +76,8 @@ object TaskManager {
 
         /* Remove old tasks */
         tasks.filter {
-            it.value.taskState == TaskState.DONE
-                && currentBlockPos.distanceTo(it.key) > maxReach + 2
+            (it.value.taskState == TaskState.DONE && currentBlockPos.distanceTo(it.key) > maxReach + 2)
+                    || ( it.value.taskState != TaskState.DONE && currentBlockPos.distanceTo(it.key) > maxReach)
         }.forEach {
             if (it.value.toRemove) {
                 if (System.currentTimeMillis() - it.value.timestamp > 1000L) tasks.remove(it.key)

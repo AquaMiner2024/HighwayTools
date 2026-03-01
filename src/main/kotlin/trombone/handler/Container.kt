@@ -51,26 +51,31 @@ object Container {
     val shulkerOpenTimer = TickTimer(TimeUnit.TICKS)
     var grindCycles = 0
     var lastRestockTime = 0L
+    var restockTimer = 0L
 
     fun SafeClientEvent.handleRestock(item: Item) {
-        if (lastRestockTime == 0L) {
-            lastRestockTime = System.currentTimeMillis()
+        val currentTime = System.currentTimeMillis()
+        if (restockTimer == 0L) {
+            restockTimer = currentTime + 5000L
             return
         }
         if (preferEnderChests && item.block == Blocks.OBSIDIAN) {
             handleEnderChest(item)
         } else {
-            if (System.currentTimeMillis() - lastRestockTime < 5000L) return
+            if (currentTime < restockTimer) return
             // Case 1: item is in a shulker in the inventory
             getShulkerWith(player.inventorySlots, item)?.let { slot ->
                 getRemotePos()?.let { pos ->
                     containerTask = BlockTask(pos, TaskState.PLACE, slot.stack.item.block, item = item)
-                    lastRestockTime = System.currentTimeMillis()
+                    lastRestockTime = currentTime
+                    restockTimer = 0L
                 } ?: run {
+                    restockTimer = 0L
                     disableError("Can't find possible container position (Case: 1)")
                 }
             } ?: run {
                 handleEnderChest(item)
+                restockTimer = 0L
             }
         }
     }
