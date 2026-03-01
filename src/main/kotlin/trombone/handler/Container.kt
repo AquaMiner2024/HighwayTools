@@ -54,14 +54,14 @@ object Container {
     var restockTimer = 0L
 
     fun SafeClientEvent.handleRestock(item: Item) {
-        val currentTime = System.currentTimeMillis()
-        if (restockTimer == 0L) {
-            restockTimer = currentTime + 5000L
-            return
-        }
         if (preferEnderChests && item.block == Blocks.OBSIDIAN) {
             handleEnderChest(item)
         } else {
+            val currentTime = System.currentTimeMillis()
+            if (restockTimer == 0L) {
+                restockTimer = currentTime + 5000L
+                return
+            }
             if (currentTime < restockTimer) return
             // Case 1: item is in a shulker in the inventory
             getShulkerWith(player.inventorySlots, item)?.let { slot ->

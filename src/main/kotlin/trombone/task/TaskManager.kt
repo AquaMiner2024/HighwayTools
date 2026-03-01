@@ -76,14 +76,16 @@ object TaskManager {
 
         /* Remove old tasks */
         tasks.filter {
+            val isBehind = (it.key.x - currentBlockPos.x) * startingDirection.directionVec.x + (it.key.z - currentBlockPos.z) * startingDirection.directionVec.z < 0
             (it.value.taskState == TaskState.DONE && currentBlockPos.distanceTo(it.key) > maxReach + 2)
-                    || ( it.value.taskState != TaskState.DONE && currentBlockPos.distanceTo(it.key) > maxReach)
+                    || ( it.value.taskState != TaskState.DONE && currentBlockPos.distanceTo(it.key) > if (!isBehind) maxReach else maxReach - 2 )
         }.forEach {
             if (it.value.toRemove) {
-                if (System.currentTimeMillis() - it.value.timestamp > 1000L) tasks.remove(it.key)
+                if (System.currentTimeMillis() - it.value.timestamp > 1000L && it.value.taskState == TaskState.DONE) tasks.remove(it.key)
             } else {
                 it.value.toRemove = true
                 it.value.timestamp = System.currentTimeMillis()
+                it.value.updateState(TaskState.DONE)
             }
         }
     }
