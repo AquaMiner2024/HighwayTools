@@ -25,6 +25,7 @@ class BlockTask(
     var targetBlock: Block,
     var isSupport: Boolean = false,
     var isFiller: Boolean = false,
+    var isContainerTask: Boolean = false,
     var item: Item = Items.AIR
 ) {
     var ranTicks = 0

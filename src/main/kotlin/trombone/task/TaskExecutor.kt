@@ -106,7 +106,7 @@ object TaskExecutor {
                 if (!updateOnly) doImpossiblePlace()
             }
             TaskState.LANDFILL -> {
-                if (!updateOnly) doLandfill(blockTask, updateOnly)
+                if (!updateOnly) doLandfill(blockTask)
             }
             TaskState.DONE -> { /* do nothing */ }
         }
@@ -488,15 +488,16 @@ object TaskExecutor {
         if (!world.isPlaceable(blockTask.blockPos)) {
             if (debugLevel == IO.DebugLevel.VERBOSE) {
                 if (!anonymizeStats) {
-                    MessageSendHelper.sendChatMessage("${module.chatName} Invalid place position @(${blockTask.blockPos.asString()}) Removing task")
+                    MessageSendHelper.sendChatMessage("${module.chatName} Invalid place position @(${blockTask.blockPos.asString()}): ")
                 } else {
-                    MessageSendHelper.sendChatMessage("${module.chatName} Invalid place position. Removing task")
+                    MessageSendHelper.sendChatMessage("${module.chatName} Invalid place position: ")
                 }
             }
-            if (blockTask == containerTask) {
+            if (containerTask.isContainerTask) {
                 MessageSendHelper.sendChatMessage("${module.chatName} Failed container task. Trying to break block.")
                 containerTask.updateState(TaskState.BREAK)
             } else {
+                MessageSendHelper.sendChatMessage("${module.chatName} Remove Task.")
                 TaskManager.tasks.remove(blockTask.blockPos)
             }
 
@@ -529,7 +530,7 @@ object TaskExecutor {
         }
     }
 
-    private fun SafeClientEvent.doLandfill(blockTask: BlockTask, updateOnly: Boolean) {
+    private fun SafeClientEvent.doLandfill(blockTask: BlockTask) {
         goal = null
         val isAboveAir = world.getBlockState(player.flooredPosition.down()).isReplaceable
         if (isAboveAir) {
@@ -571,7 +572,6 @@ object TaskExecutor {
                 }
             }
         }
-        if (updateOnly) return
         // Try break block
         targetBlocks.forEach { pos ->
             val state = world.getBlockState(pos)

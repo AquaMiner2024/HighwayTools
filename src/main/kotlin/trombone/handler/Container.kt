@@ -54,19 +54,20 @@ object Container {
     var restockTimer = 0L
 
     fun SafeClientEvent.handleRestock(item: Item) {
+        if (containerTask.taskState != TaskState.DONE) return
         if (preferEnderChests && item.block == Blocks.OBSIDIAN) {
             handleEnderChest(item)
         } else {
-            val currentTime = System.currentTimeMillis()
-            if (restockTimer == 0L) {
-                restockTimer = currentTime + 5000L
-                return
-            }
-            if (currentTime < restockTimer) return
             // Case 1: item is in a shulker in the inventory
             getShulkerWith(player.inventorySlots, item)?.let { slot ->
+                val currentTime = System.currentTimeMillis()
+                if (restockTimer == 0L) {
+                    restockTimer = currentTime + 5000L
+                    return
+                }
+                if (currentTime < restockTimer) return
                 getRemotePos()?.let { pos ->
-                    containerTask = BlockTask(pos, TaskState.PLACE, slot.stack.item.block, item = item)
+                    containerTask = BlockTask(pos, TaskState.PLACE, slot.stack.item.block, isContainerTask = true, item = item)
                     lastRestockTime = currentTime
                     restockTimer = 0L
                 } ?: run {
@@ -75,7 +76,6 @@ object Container {
                 }
             } ?: run {
                 handleEnderChest(item)
-                restockTimer = 0L
             }
         }
     }
@@ -92,7 +92,7 @@ object Container {
             if (player.inventorySlots.countBlock(Blocks.ENDER_CHEST) > saveEnder) {
                 if (grindCycles > 0) {
                     getRemotePos()?.let { pos ->
-                        containerTask = BlockTask(pos, TaskState.PLACE, Blocks.ENDER_CHEST, item = Blocks.OBSIDIAN.item)
+                        containerTask = BlockTask(pos, TaskState.PLACE, Blocks.ENDER_CHEST, isContainerTask = true, item = Blocks.OBSIDIAN.item)
                         containerTask.destroy = true
                         if (grindCycles > 1) containerTask.collect = false
                         containerTask.itemID = Blocks.OBSIDIAN.id

@@ -76,9 +76,9 @@ object TaskManager {
 
         /* Remove old tasks */
         tasks.filter {
-            val isBehind = (it.key.x - currentBlockPos.x) * startingDirection.directionVec.x + (it.key.z - currentBlockPos.z) * startingDirection.directionVec.z < 0
             (it.value.taskState == TaskState.DONE && currentBlockPos.distanceTo(it.key) > maxReach + 2)
-                    || ( it.value.taskState != TaskState.DONE && currentBlockPos.distanceTo(it.key) > if (!isBehind) maxReach else maxReach - 2 )
+                    || ( it.value.taskState != TaskState.DONE && currentBlockPos.distanceTo(it.key) > maxReach + 0.5 )
+                    || (( it.key.x - (currentBlockPos.x - startingDirection.directionVec.x * 2.8)) * startingDirection.directionVec.x + (it.key.z - (currentBlockPos.z - startingDirection.directionVec.z * 2.8)) * startingDirection.directionVec.z < 0)
         }.forEach {
             if (it.value.toRemove) {
                 if (System.currentTimeMillis() - it.value.timestamp > 1000L && it.value.taskState == TaskState.DONE) tasks.remove(it.key)
@@ -172,10 +172,9 @@ object TaskManager {
 
                 if (blockTask.sequence.isNotEmpty()) {
                     addTask(blockTask, blueprintTask)
-                } else if (stayTicks > 10) {
+                } else {
                     blockTask.updateState(TaskState.IMPOSSIBLE_PLACE)
                     addTask(blockTask, blueprintTask)
-                    stayTicks = 0
                 }
             }
 
