@@ -15,7 +15,7 @@ object BaritoneHelper {
         baritoneSettingRenderGoal = BaritoneUtils.settings?.renderGoal?.value ?: true
         baritoneSettingAllowInventory = BaritoneUtils.settings?.allowInventory?.value ?: true
         BaritoneUtils.settings?.allowPlace?.value = true
-        BaritoneUtils.settings?.allowBreak?.value = false
+        BaritoneUtils.settings?.allowBreak?.value = true
         BaritoneUtils.settings?.renderGoal?.value = goalRender
         BaritoneUtils.settings?.allowInventory?.value = true
     }
